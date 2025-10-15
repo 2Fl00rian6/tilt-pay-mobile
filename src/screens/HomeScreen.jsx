@@ -1,29 +1,219 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useTailwind } from 'tailwind-rn';
+// src/screens/HomeScreen.jsx
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Svg, Path, Rect, Circle } from 'react-native-svg';
 import { getCurrentUsername, clearToken } from '../utils/authStorage';
+import { useError } from '../context/ErrorContext';
+
+/* ---------- SVG ICONS ---------- */
+const IconUser = ({ size = 22, color = '#111' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M20 21a8 8 0 0 0-16 0" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+    <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="1.8"/>
+  </Svg>
+);
+
+const IconCopy = ({ size = 16, color = '#6B7280' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="9" y="9" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6"/>
+    <Rect x="4" y="4" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6"/>
+  </Svg>
+);
+
+const IconPlus = ({ size = 12, color = '#111' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </Svg>
+);
+
+const IconArrowDownLeft = ({ size = 18, color = '#111' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M17 7L7 17M7 17V9M7 17h8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const IconArrowUpRight = ({ size = 18, color = '#fff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M7 17l10-10M17 7H9m8 0v8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+/* -------------------------------- */
 
 export default function HomeScreen({ navigation }) {
-  const tw = useTailwind();
+  const { showError } = useError();
+  const [username, setUsername] = useState('');
+  const [balance, setBalance] = useState(425.17); // demo
+
+  useEffect(() => {
+    (async () => {
+      const u = await getCurrentUsername();
+      setUsername(u || 'user');
+    })();
+  }, []);
+
+  const transactions = useMemo(
+    () => [
+      { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
+      { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
+      { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
+      { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
+    ],
+    []
+  );
+
+  const fmtAmount = (n) => {
+    const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${n >= 0 ? '+$' : '-$'} ${abs}`;
+  };
+
+  const fmtDate = (iso) =>
+    new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  async function onCopyTag() {
+    try {
+      const Clipboard = await import('expo-clipboard');
+      await Clipboard.setStringAsync(username);
+      showError('Tag copied', { type: 'info', position: 'top' });
+    } catch {
+      showError('Could not copy tag', { position: 'top' });
+    }
+  }
 
   async function onLogout() {
-    const u = await getCurrentUsername();
-    await clearToken(u);          // on garde le PIN
+    await clearToken(username);
     navigation.replace('ChooseTag');
   }
 
   return (
-    <View style={tw('flex-1 bg-white pt-16')}>
-      <View style={tw('items-center mb-10')}>
-        <View style={tw('w-16 h-1 bg-gray-300 rounded-full')} />
-      </View>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <View style={styles.container}>
+        {/* Header right (profile) */}
+        <View style={styles.headerRow}>
+          <View style={{ width: 28 }} />
+          <TouchableOpacity onPress={onLogout} style={styles.profileBtn}>
+            <IconUser size={22} color="#111" />
+          </TouchableOpacity>
+        </View>
 
-      <View style={tw('px-6')}>
-        <Text style={tw('text-xl font-semibold text-black mb-10')}>Home</Text>
-        <TouchableOpacity onPress={onLogout} style={tw('h-12 rounded-2xl items-center justify-center bg-black')}>
-          <Text style={tw('text-white font-semibold')}>Log out</Text>
+        {/* Tag + copy */}
+        <View style={styles.tagRow}>
+          <Text style={styles.tagText}>tag: {username || 'user'}</Text>
+          <TouchableOpacity onPress={onCopyTag} style={styles.copyBtn}>
+            <IconCopy size={16} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Balance */}
+        <Text style={styles.balanceText}>
+          ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        </Text>
+
+        {/* Add funds (outline) */}
+        <TouchableOpacity style={styles.addBtn}>
+          <Text style={styles.addBtnText}>Add funds</Text>
+          <IconPlus size={14} color="#111" />
         </TouchableOpacity>
+
+        {/* Transactions title */}
+        <Text style={styles.sectionTitle}>Transactions</Text>
+
+        {/* Transactions list */}
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 20 }}
+          ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+          renderItem={({ item }) => (
+            <View style={styles.txRow}>
+              <View style={styles.txAvatar} />
+              <View style={styles.txInfo}>
+                <Text style={styles.txName}>{item.name}</Text>
+                <Text style={styles.txDate}>{fmtDate(item.date)}</Text>
+              </View>
+              <Text
+                style={[
+                  styles.txAmount,
+                  item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
+                ]}
+              >
+                {fmtAmount(item.amount)}
+              </Text>
+            </View>
+          )}
+        />
+
+        <View style={styles.bottomBar}>
+          <TouchableOpacity onPress={() => navigation.navigate('ReceiveSelect')} style={[styles.bigBtn, styles.bigBtnDark]}>
+            <View style={styles.bigBtnRow}>
+              <Text style={[styles.bigBtnText]}>Receive</Text>
+              <IconArrowDownLeft size={18} color="#fff" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.bigBtn, styles.bigBtnDark]}>
+            <View style={styles.bigBtnRow}>
+              <Text style={styles.bigBtnText}>Send</Text>
+              <IconArrowUpRight size={18} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fff' },
+
+  headerRow: {
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  profileBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
+
+  tagRow: { marginTop: 6, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  tagText: { color: '#6B7280', fontSize: 14 },
+  copyBtn: { padding: 6, marginLeft: 6 },
+
+  balanceText: { marginTop: 16, fontSize: 40, lineHeight: 48, color: '#111827', fontWeight: '700', textAlign: 'center' },
+
+  addBtn: {
+    marginTop: 12, alignSelf: 'center', height: 40, paddingHorizontal: 18,
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#111111',
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
+  },
+  addBtnText: { color: '#111111', fontWeight: '600' },
+
+  sectionTitle: { marginTop: 22, marginBottom: 10, paddingHorizontal: 20, color: '#6B7280', fontWeight: '600' },
+
+  txRow: { flexDirection: 'row', alignItems: 'center' },
+  txAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E5E7EB', marginRight: 12 },
+  txInfo: { flex: 1 },
+  txName: { color: '#111827', fontWeight: '600' },
+  txDate: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
+  txAmount: { marginLeft: 8, fontWeight: '600' },
+  amountPlus: { color: '#111827' },
+  amountMinus: { color: '#4B5563' },
+
+  bottomBar: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8, flexDirection: 'row', gap: 12 },
+  bigBtn: {
+    flex: 1, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  },
+  bigBtnLight: { backgroundColor: '#F3F4F6' },
+  bigBtnDark: { backgroundColor: '#111111' },
+  bigBtnText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  bigBtnTextDark: { fontSize: 16, fontWeight: '600', color: '#111' },
+  bigBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+});

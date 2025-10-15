@@ -7,6 +7,7 @@ import SetPinScreen from '../screens/SetPinScreen';
 import LoginPinScreen from '../screens/LoginPinScreen';
 import EnterPinScreen from '../screens/EnterPinScreen';
 import HomeScreen from '../screens/HomeScreen';
+import ReceiveSelectScreen from '../screens/ReceiveSelectScreen';
 
 const Stack = createStackNavigator();
 
@@ -18,7 +19,15 @@ export default function StackNav() {
       <Stack.Screen name="SetPin" component={SetPinScreen} />
       <Stack.Screen name="LoginPin" component={LoginPinScreen} />
       <Stack.Screen name="EnterPin" component={EnterPinScreen} />
+
+      
+      {/* HOME */}
       <Stack.Screen name="Home" component={HomeScreen} />
+
+      {/* RECEIVE */}
+      <Stack.Screen name="ReceiveSelect" component={ReceiveSelectScreen} />
+      <Stack.Screen name="ReceiveWithTag" component={() => null} />
+      <Stack.Screen name="ReceiveTapToPay" component={() => null} />
     </Stack.Navigator>
   );
 }
