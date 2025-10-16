@@ -4,6 +4,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import AuthGate from '../screens/AuthGate';
 import ChooseTagScreen from '../screens/ChooseTagScreen';
 import SetPinScreen from '../screens/SetPinScreen';
+import EnterPhoneScreen from '../screens/EnterPhoneScreen';
+import VerifyCodeScreen from '../screens/VerifyCodeScreen';
 import LoginPinScreen from '../screens/LoginPinScreen';
 import EnterPinScreen from '../screens/EnterPinScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -16,6 +18,8 @@ export default function StackNav() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AuthGate" component={AuthGate} />
       <Stack.Screen name="ChooseTag" component={ChooseTagScreen} />
+      <Stack.Screen name="EnterPhone" component={EnterPhoneScreen} />
+      <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
       <Stack.Screen name="SetPin" component={SetPinScreen} />
       <Stack.Screen name="LoginPin" component={LoginPinScreen} />
       <Stack.Screen name="EnterPin" component={EnterPinScreen} />
