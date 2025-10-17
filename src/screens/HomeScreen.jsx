@@ -1,78 +1,59 @@
-// src/screens/HomeScreen.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Path, Rect, Circle } from 'react-native-svg';
-import { getCurrentUsername, clearToken } from '../utils/authStorage';
+import { getCurrentUsername, wipeAllLocalData } from '../utils/authStorage';
 import { useError } from '../context/ErrorContext';
 
-/* ---------- SVG ICONS ---------- */
 const IconUser = ({ size = 22, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M20 21a8 8 0 0 0-16 0" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
     <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="1.8"/>
   </Svg>
 );
-
 const IconCopy = ({ size = 16, color = '#6B7280' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Rect x="9" y="9" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6"/>
     <Rect x="4" y="4" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6"/>
   </Svg>
 );
-
 const IconPlus = ({ size = 12, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round"/>
   </Svg>
 );
-
 const IconArrowDownLeft = ({ size = 18, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M17 7L7 17M7 17V9M7 17h8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
-
 const IconArrowUpRight = ({ size = 18, color = '#fff' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M7 17l10-10M17 7H9m8 0v8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
-/* -------------------------------- */
 
 export default function HomeScreen({ navigation }) {
   const { showError } = useError();
   const [username, setUsername] = useState('');
-  const [balance, setBalance] = useState(425.17); // demo
+  const [balance, setBalance] = useState(425.17);
 
-  useEffect(() => {
-    (async () => {
-      const u = await getCurrentUsername();
-      setUsername(u || 'user');
-    })();
-  }, []);
+  useEffect(() => { (async () => {
+    const u = await getCurrentUsername();
+    setUsername(u || 'user');
+  })(); }, []);
 
-  const transactions = useMemo(
-    () => [
-      { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
-      { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
-      { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
-      { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
-    ],
-    []
-  );
+  const transactions = useMemo(() => [
+    { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
+    { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
+    { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
+    { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
+  ], []);
 
   const fmtAmount = (n) => {
     const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return `${n >= 0 ? '+$' : '-$'} ${abs}`;
   };
-
   const fmtDate = (iso) =>
     new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -87,14 +68,17 @@ export default function HomeScreen({ navigation }) {
   }
 
   async function onLogout() {
-    await clearToken(username);
-    navigation.replace('ChooseTag');
+    try {
+      await wipeAllLocalData();
+    } finally {
+      navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] });
+    }
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.container}>
-        {/* Header right (profile) */}
+        {/* Header right (profile → logout) */}
         <View style={styles.headerRow}>
           <View style={{ width: 28 }} />
           <TouchableOpacity onPress={onLogout} style={styles.profileBtn}>
@@ -121,10 +105,8 @@ export default function HomeScreen({ navigation }) {
           <IconPlus size={14} color="#111" />
         </TouchableOpacity>
 
-        {/* Transactions title */}
+        {/* Transactions */}
         <Text style={styles.sectionTitle}>Transactions</Text>
-
-        {/* Transactions list */}
         <FlatList
           data={transactions}
           keyExtractor={(item) => item.id}
@@ -137,23 +119,23 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.txName}>{item.name}</Text>
                 <Text style={styles.txDate}>{fmtDate(item.date)}</Text>
               </View>
-              <Text
-                style={[
-                  styles.txAmount,
-                  item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
-                ]}
-              >
-                {fmtAmount(item.amount)}
-              </Text>
+              <Text style={[
+                styles.txAmount,
+                item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
+              ]}>{fmtAmount(item.amount)}</Text>
             </View>
           )}
         />
 
+        {/* Bottom actions */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity onPress={() => navigation.navigate('ReceiveSelect')} style={[styles.bigBtn, styles.bigBtnDark]}>
+          <TouchableOpacity
+            style={[styles.bigBtn, styles.bigBtnLight]}
+            onPress={() => navigation.navigate('ReceiveSelect')}
+          >
             <View style={styles.bigBtnRow}>
-              <Text style={[styles.bigBtnText]}>Receive</Text>
-              <IconArrowDownLeft size={18} color="#fff" />
+              <Text style={styles.bigBtnTextDark}>Receive</Text>
+              <IconArrowDownLeft size={18} color="#111" />
             </View>
           </TouchableOpacity>
 
@@ -173,13 +155,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, backgroundColor: '#fff' },
 
-  headerRow: {
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
+  headerRow: { paddingTop: 12, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
   profileBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
 
   tagRow: { marginTop: 6, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
