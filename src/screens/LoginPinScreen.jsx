@@ -1,71 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { useTailwind } from 'tailwind-rn';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import PinDots from '../components/PinDots';
 import Keypad from '../components/Keypad';
 import { useError } from '../context/ErrorContext';
-import { getCurrentUsername, getPin, setToken } from '../utils/authStorage';
+import { login } from '../api/auth';
+import { setCurrentPhone, setToken } from '../utils/authStorage';
+import HeaderBar from '../components/HeaderBar';
 
 const PIN_LEN = 4;
 
 export default function LoginPinScreen({ route, navigation }) {
-  const tw = useTailwind();
   const { showError } = useError();
+  const phoneNumber = route?.params?.phoneNumber ?? '';
+
   const [pin, setPin] = useState('');
-  const [username, setUsername] = useState(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const u = route?.params?.username || (await getCurrentUsername());
-      if (!u) return navigation.replace('ChooseTag');
-      setUsername(u);
-      const saved = await getPin(u);
-      if (!saved) return navigation.replace('SetPin', { username: u }); // pas de PIN → créer
-      setReady(true);
-    })();
-  }, [route, navigation]);
-
-  const onKey = (k) => { if (pin.length < PIN_LEN) setPin(pin + String(k)); };
+  const onKey = (k) => { if (pin.length < PIN_LEN) setPin((p) => p + String(k)); };
   const onBackspace = () => setPin((p) => p.slice(0, -1));
 
   useEffect(() => {
+    if (pin.length !== PIN_LEN) return;
     (async () => {
-      if (pin.length !== PIN_LEN || !username) return;
-      const saved = await getPin(username);
-      if (saved === pin) {
-        await setToken(username, '1');
+      try {
+        const { access_token } = await login({ phoneNumber, pin });
+        await setCurrentPhone(phoneNumber);
+        await setToken(phoneNumber, access_token || '');
         navigation.replace('Home');
-      } else {
+      } catch (e) {
         setPin('');
-        showError('Wrong PIN', { position:'top' });
+        showError(e?.message || 'Invalid PIN', { position: 'top' });
       }
     })();
-  }, [pin, username, navigation, showError]);
-
-  if (!ready) return null;
+  }, [pin, phoneNumber, navigation, showError]);
 
   return (
-    <View style={tw('flex-1 bg-white pt-16')}>
-      <View style={tw('items-center mb-10')}>
-        <View style={tw('w-16 h-1 bg-gray-300 rounded-full')} />
-      </View>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <HeaderBar title="" onBack={() => navigation.replace('EnterPhone')} />
+      <View style={styles.container}>
+        <View style={styles.handleWrap}><View style={styles.handle} /></View>
 
-      <View style={tw('px-6')}>
-        <Text style={tw('text-xl font-semibold text-black mb-10')}>Enter your PIN code</Text>
-      </View>
+        <View style={{ paddingHorizontal: 24 }}>
+          <Text style={styles.title}>Enter your PIN code</Text>
+        </View>
 
-      <View style={tw('items-center mb-10')}>
-        <PinDots value={pin} length={PIN_LEN} />
-      </View>
+        <View style={styles.dotsWrap}>
+          <PinDots value={pin} length={PIN_LEN} />
+        </View>
 
-      <View style={tw('flex-1')}>
-        <Keypad onKey={onKey} onBackspace={onBackspace} />
-      </View>
-
-      <View style={tw('items-center mb-8')}>
-        <Text style={tw('text-gray-500')}>Forgot your PIN code?</Text>
+        <View style={{ flex: 1 }}>
+          <Keypad onKey={onKey} onBackspace={onBackspace} />
+        </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff', paddingTop: 8 },
+  handleWrap: { alignItems: 'center', marginBottom: 16 },
+  handle: { width: 36, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2 },
+  title: { fontSize: 20, lineHeight: 28, fontWeight: '600', color: '#111827', marginBottom: 24 },
+  dotsWrap: { alignItems: 'center', marginBottom: 10 },
+});

@@ -1,4 +1,4 @@
-import { http } from '../api/client';
+import { http } from './client';
 
 export function getBalance(token) {
   return http.get('/wallet/balance', { token });

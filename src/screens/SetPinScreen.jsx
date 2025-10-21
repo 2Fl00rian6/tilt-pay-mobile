@@ -1,42 +1,33 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { View, Text } from 'react-native';
-import { useTailwind } from 'tailwind-rn';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import PinDots from '../components/PinDots';
 import Keypad from '../components/Keypad';
 import { useError } from '../context/ErrorContext';
-import { getCurrentUsername, setPin as storePin, setToken } from '../utils/authStorage';
+import { createAccount, login } from '../api/auth';
+import { setCurrentPhone, setToken } from '../utils/authStorage';
+import HeaderBar from '../components/HeaderBar';
 
 const PIN_LEN = 4;
 
 export default function SetPinScreen({ route, navigation }) {
-  const tw = useTailwind();
   const { showError } = useError();
+
+  const phoneNumber = route?.params?.phoneNumber ?? '';
+  const tagName = route?.params?.tagName ?? '';
+  const fullName = route?.params?.fullName ?? (tagName || 'Tilt User');
+
   const [pin, setPin] = useState('');
-  const [step, setStep] = useState('create');
+  const [step, setStep] = useState('create'); // create | confirm
   const [firstPin, setFirstPin] = useState(null);
-  const [errorTick, setErrorTick] = useState(0);
-  const usernameParam = route?.params?.username;
-  const mismatchRef = useRef(false);
 
-  const onKey = useCallback((k) => {
-    if (!k) return;
-    const d = String(k).replace(/\D+/g, '');
-    if (!d) return;
-    setPin((p) => (p.length < PIN_LEN ? p + d : p));
-  }, []);
-  const onBackspace = useCallback(() => setPin((p) => p.slice(0, -1)), []);
+  const onKey = (k) => { if (pin.length < PIN_LEN) setPin((p) => p + String(k)); };
+  const onBackspace = () => setPin((p) => p.slice(0, -1));
 
-  const triggerMismatch = useCallback(() => {
-    if (mismatchRef.current) return;
-    mismatchRef.current = true;
-    setErrorTick((t) => t + 1);
-    showError('PIN codes do not match', { position: 'top' });
-    setTimeout(() => {
-      setFirstPin(null);
-      setStep('create');
-      setPin('');
-      mismatchRef.current = false;
-    }, 260);
+  const onMismatch = useCallback(() => {
+    showError('PIN codes do not match', { position:'top' });
+    setFirstPin(null);
+    setStep('create');
+    setPin('');
   }, [showError]);
 
   useEffect(() => {
@@ -50,56 +41,47 @@ export default function SetPinScreen({ route, navigation }) {
     }
 
     (async () => {
-      const username = usernameParam || (await getCurrentUsername());
-      if (!username) { navigation.replace('EnterPhone'); return; }
-
-      if (firstPin === pin) {
-        await storePin(username, pin);
-        await setToken(username, '1');
+      try {
+        await createAccount({ phoneNumber, fullName, tagName, pin: firstPin });
+        const { access_token } = await login({ phoneNumber, pin: firstPin });
+        await setCurrentPhone(phoneNumber);
+        await setToken(phoneNumber, access_token || '');
         navigation.replace('Home');
-      } else {
-        triggerMismatch();
+      } catch (e) {
+        showError(e?.message || 'Account creation failed', { position: 'top' });
+        onMismatch();
       }
     })();
-  }, [pin, step, firstPin, navigation, usernameParam, triggerMismatch]);
+  }, [pin, step, firstPin, phoneNumber, fullName, tagName, navigation, onMismatch, showError]);
 
-  const title = useMemo(
-    () => (step === 'create' ? 'Set your PIN code' : 'Confirm your PIN code'),
-    [step]
-  );
+  const title = useMemo(() => (step === 'create' ? 'Set your PIN code' : 'Confirm your PIN code'), [step]);
 
   return (
-    <View style={tw('flex-1 bg-white pt-16')}>
-      <View style={tw('items-center mb-10')}>
-        <View style={tw('w-9 h-1 bg-gray-300 rounded-full')} />
-      </View>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <HeaderBar title="" onBack={() => navigation.replace('ChooseTag', { phoneNumber })} />
+      <View style={styles.container}>
+        <View style={styles.handleWrap}><View style={styles.handle} /></View>
 
-      <View style={tw('px-6')}>
-        <Text style={tw('text-xl font-semibold text-black mb-10')}>{title}</Text>
-      </View>
-
-      <View style={tw('items-center mb-8')}>
-        <PinDots value={pin} length={PIN_LEN} errorTick={errorTick} />
-      </View>
-
-      <View style={tw('flex-1')}>
-        <Keypad onKey={onKey} onBackspace={onBackspace} />
-      </View>
-
-      <View style={tw('px-6 pb-4')}>
-        <View style={tw('h-14 rounded-2xl items-center justify-center bg-gray-200')}>
-          <Text style={tw('text-gray-400 font-semibold')}>Continue</Text>
+        <View style={{ paddingHorizontal: 24 }}>
+          <Text style={styles.title}>{title}</Text>
         </View>
-      </View>
 
-      <View style={tw('items-center mb-8')}>
-        <Text style={tw('text-gray-500')}>
-          Do you have an account?{' '}
-          <Text onPress={() => navigation.replace('LoginPin')} style={tw('text-black font-semibold')}>
-            Log in
-          </Text>
-        </Text>
+        <View style={styles.dotsWrap}>
+          <PinDots value={pin} length={PIN_LEN} />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Keypad onKey={onKey} onBackspace={onBackspace} />
+        </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff', paddingTop: 8 },
+  handleWrap: { alignItems: 'center', marginBottom: 16 },
+  handle: { width: 36, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2 },
+  title: { fontSize: 20, lineHeight: 28, fontWeight: '600', color: '#111827', marginBottom: 24 },
+  dotsWrap: { alignItems: 'center', marginBottom: 10 },
+});

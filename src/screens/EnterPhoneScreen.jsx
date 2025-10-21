@@ -5,8 +5,8 @@ import {
   TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useError } from '../context/ErrorContext';
 import HeaderBar from '../components/HeaderBar';
+import { useError } from '../context/ErrorContext';
 
 const COUNTRIES = [
   { cca2: 'FR', name: 'France', flag: '🇫🇷', callingCode: '33', nsnMin: 9, nsnMax: 9, hasTrunk0: true,  groups: [1,2,2,2,2] },
@@ -140,17 +140,22 @@ export default function EnterPhoneScreen({ navigation }) {
     setNsn(v);
   };
 
-  const onContinue = async () => {
+  const pushVerify = async (mode) => {
     if (!canContinue) { showError('Enter a valid phone number', { position: 'top' }); return; }
     inputRef.current?.blur();
     await awaitKeyboardHide();
     const e164 = `+${country.callingCode}${nsn}`;
-    navigation.navigate('VerifyCode', { phoneDisplay: `+${country.callingCode} ${formattedNational}`, e164 });
+    navigation.navigate('VerifyCode', {
+      mode,                               // 'register' | 'login'
+      phoneNumber: nsn,                   // **format attendu par l’API** (10 chiffres FR, etc.)
+      phoneDisplay: `+${country.callingCode} ${formattedNational}`,
+      e164,
+    });
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <HeaderBar title="" />
+      <HeaderBar title="" onBack={undefined} />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -187,7 +192,7 @@ export default function EnterPhoneScreen({ navigation }) {
                     style={styles.phoneInput}
                     maxLength={40}
                     returnKeyType="done"
-                    onSubmitEditing={onContinue}
+                    onSubmitEditing={() => pushVerify('register')}
                   />
                 </TouchableOpacity>
               </View>
@@ -197,7 +202,7 @@ export default function EnterPhoneScreen({ navigation }) {
 
             <View style={styles.bottom}>
               <TouchableOpacity
-                onPress={onContinue}
+                onPress={() => pushVerify('register')}
                 activeOpacity={0.9}
                 disabled={!canContinue}
                 style={[styles.cta, !canContinue && styles.ctaDisabled]}
@@ -207,7 +212,7 @@ export default function EnterPhoneScreen({ navigation }) {
               </TouchableOpacity>
 
               <Text style={styles.footerText}>
-                Do you have an account ? <Text onPress={onContinue} style={styles.footerLink}>Log in</Text>
+                Do you have an account ? <Text onPress={() => pushVerify('login')} style={styles.footerLink}>Log in</Text>
               </Text>
             </View>
           </View>

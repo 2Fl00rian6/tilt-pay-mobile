@@ -1,10 +1,13 @@
+// src/screens/HomeScreen.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Path, Rect, Circle } from 'react-native-svg';
-import { getCurrentUsername, wipeAllLocalData } from '../utils/authStorage';
+import { getCurrentPhone, getToken, wipeAllLocalData } from '../utils/authStorage';
+import { getBalance } from '../api/wallet';
 import { useError } from '../context/ErrorContext';
 
+/* ---------- Icônes ---------- */
 const IconUser = ({ size = 22, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M20 21a8 8 0 0 0-16 0" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
@@ -33,22 +36,44 @@ const IconArrowUpRight = ({ size = 18, color = '#fff' }) => (
   </Svg>
 );
 
-export default function HomeScreen({ navigation }) {
+/* ---------- Écran ---------- */
+export default function HomeScreen({ navigation, route }) {
   const { showError } = useError();
-  const [username, setUsername] = useState('');
-  const [balance, setBalance] = useState(425.17);
 
-  useEffect(() => { (async () => {
-    const u = await getCurrentUsername();
-    setUsername(u || 'user');
-  })(); }, []);
+  // tag éventuel passé par navigation après login/creation (si tu veux)
+  const tagFromParams = route?.params?.tagName;
 
+  const [phone, setPhone] = useState('');
+  const [tag, setTag] = useState('');
+  const [balance, setBalance] = useState(0);
+
+  // Démo transactions (à remplacer par l’API quand tu l’auras)
   const transactions = useMemo(() => [
     { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
     { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
     { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
     { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
   ], []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await getCurrentPhone();
+        setPhone(p || '');
+        setTag(tagFromParams || (p ? `user-${String(p).slice(-4)}` : 'user'));
+
+        const token = await getToken(p);
+        if (!token) return;
+
+        const b = await getBalance(token);
+        // L’API renvoie { address, lamports, sol, tokens: [...] }
+        const sol = typeof b?.sol === 'number' ? b.sol : 0;
+        setBalance(sol);
+      } catch (e) {
+        showError(e?.message || 'Could not fetch balance', { position: 'top' });
+      }
+    })();
+  }, [showError, tagFromParams]);
 
   const fmtAmount = (n) => {
     const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -60,7 +85,7 @@ export default function HomeScreen({ navigation }) {
   async function onCopyTag() {
     try {
       const Clipboard = await import('expo-clipboard');
-      await Clipboard.setStringAsync(username);
+      await Clipboard.setStringAsync(tag);
       showError('Tag copied', { type: 'info', position: 'top' });
     } catch {
       showError('Could not copy tag', { position: 'top' });
@@ -68,11 +93,8 @@ export default function HomeScreen({ navigation }) {
   }
 
   async function onLogout() {
-    try {
-      await wipeAllLocalData();
-    } finally {
-      navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] });
-    }
+    try { await wipeAllLocalData(); }
+    finally { navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] }); }
   }
 
   return (
@@ -88,13 +110,13 @@ export default function HomeScreen({ navigation }) {
 
         {/* Tag + copy */}
         <View style={styles.tagRow}>
-          <Text style={styles.tagText}>tag: {username || 'user'}</Text>
+          <Text style={styles.tagText}>tag: {tag || 'user'}</Text>
           <TouchableOpacity onPress={onCopyTag} style={styles.copyBtn}>
             <IconCopy size={16} color="#6B7280" />
           </TouchableOpacity>
         </View>
 
-        {/* Balance */}
+        {/* Balance (affiche SOL par défaut — change le label si tu veux USD/EUR) */}
         <Text style={styles.balanceText}>
           ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </Text>
@@ -119,10 +141,14 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.txName}>{item.name}</Text>
                 <Text style={styles.txDate}>{fmtDate(item.date)}</Text>
               </View>
-              <Text style={[
-                styles.txAmount,
-                item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
-              ]}>{fmtAmount(item.amount)}</Text>
+              <Text
+                style={[
+                  styles.txAmount,
+                  item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
+                ]}
+              >
+                {fmtAmount(item.amount)}
+              </Text>
             </View>
           )}
         />
@@ -151,6 +177,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
+/* ---------- Styles identiques à ta version ---------- */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, backgroundColor: '#fff' },

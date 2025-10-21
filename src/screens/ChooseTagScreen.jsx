@@ -1,66 +1,20 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useError } from '../context/ErrorContext';
-import { setCurrentUsername, getPin, sanitizeUsername } from '../utils/authStorage';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
+import HeaderBar from '../components/HeaderBar';
 
-function validateTag(raw) {
-  const trimmed = String(raw || '').trim();
-  if (!trimmed) return { ok: false, msg: 'Please enter your tag name' };
-  // autorise A-Z a-z 0-9 . _ -
-  if (!/^[A-Za-z0-9._-]+$/.test(trimmed)) {
-    return { ok: false, msg: 'Only letters, numbers, ".", "-" and "_" allowed' };
-  }
-  if (trimmed.length < 3) return { ok: false, msg: 'Minimum 3 characters' };
-  if (trimmed.length > 24) return { ok: false, msg: 'Maximum 24 characters' };
-  return { ok: true, value: sanitizeUsername(trimmed) };
-}
-
-export default function ChooseTagScreen({ navigation }) {
-  const { showError } = useError();
+export default function ChooseTagScreen({ route, navigation }) {
+  const phoneNumber = route?.params?.phoneNumber ?? '';
   const [tag, setTag] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const onContinue = async () => {
-    const v = validateTag(tag);
-    if (!v.ok) return showError(v.msg, { position: 'top' });
-
-    try {
-      setLoading(true);
-      await setCurrentUsername(v.value);
-      const existingPin = await getPin(v.value);
-      // route -> SetPin si pas de PIN, sinon LoginPin
-      navigation.navigate(existingPin ? 'LoginPin' : 'SetPin', { username: v.value });
-    } catch (e) {
-      console.warn('ChooseTag onContinue error:', e);
-      showError('Unexpected error. Please try again.', { position: 'top' });
-    } finally {
-      setLoading(false);
-    }
+  const onContinue = () => {
+    const tagName = tag.trim();
+    if (!tagName) return;
+    navigation.replace('SetPin', { phoneNumber, tagName, fullName: tagName });
   };
-
-  const onPressLogin = async () => {
-    const v = validateTag(tag);
-    if (!v.ok) return showError(v.msg, { position: 'top' });
-    try {
-      setLoading(true);
-      await setCurrentUsername(v.value);
-      navigation.navigate('LoginPin', { username: v.value });
-    } catch (e) {
-      console.warn('ChooseTag onPressLogin error:', e);
-      showError('Unexpected error. Please try again.', { position: 'top' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const canContinue = validateTag(tag).ok;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safe}>
+      <HeaderBar title="" onBack={() => navigation.replace('EnterPhone')} />
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.container}>
           <View style={styles.handleWrap}><View style={styles.handle} /></View>
@@ -87,18 +41,9 @@ export default function ChooseTagScreen({ navigation }) {
           <View style={{ flex: 1 }} />
 
           <View style={styles.bottom}>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={onContinue}
-              disabled={!canContinue || loading}
-              style={[styles.cta, (!canContinue || loading) && styles.ctaDisabled]}
-            >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={[styles.ctaText, (!canContinue || loading) && styles.ctaTextDisabled]}>Continue</Text>}
+            <TouchableOpacity onPress={onContinue} activeOpacity={0.9} disabled={!tag.trim()} style={[styles.cta, !tag.trim() && styles.ctaDisabled]}>
+              <Text style={[styles.ctaText, !tag.trim() && styles.ctaTextDisabled]}>Continue</Text>
             </TouchableOpacity>
-
-            <Text style={styles.footerText}>
-              Do you have an account? <Text onPress={onPressLogin} style={styles.footerLink}>Log in</Text>
-            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -121,6 +66,4 @@ const styles = StyleSheet.create({
   ctaDisabled: { backgroundColor: '#E5E7EB' },
   ctaText: { color: '#FFFFFF', fontWeight: '600', fontSize: 16 },
   ctaTextDisabled: { color: '#9CA3AF' },
-  footerText: { color: '#6B7280', fontSize: 13 },
-  footerLink: { color: '#111111', fontWeight: '600' },
 });
