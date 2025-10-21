@@ -140,33 +140,26 @@ export default function EnterPhoneScreen({ navigation }) {
     setNsn(v);
   };
 
-  const pushVerify = async (mode) => {
+  const goNext = async (mode) => {
     if (!canContinue) { showError('Enter a valid phone number', { position: 'top' }); return; }
     inputRef.current?.blur();
     await awaitKeyboardHide();
-    const e164 = `+${country.callingCode}${nsn}`;
-    navigation.navigate('VerifyCode', {
-      mode,                               // 'register' | 'login'
-      phoneNumber: nsn,                   // **format attendu par l’API** (10 chiffres FR, etc.)
-      phoneDisplay: `+${country.callingCode} ${formattedNational}`,
-      e164,
-    });
+    const dialCode = `+${country.callingCode}`;
+    const phoneDisplay = `${dialCode} ${formattedNational}`;
+    navigation.navigate('ChooseTag', { dialCode, nsn, phoneDisplay, mode });
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <HeaderBar title="" onBack={undefined} />
-
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.container}>
             <View style={styles.handleWrap}><View style={styles.handle} /></View>
-
             <View style={{ paddingHorizontal: 24 }}>
               <Text style={styles.title}>Enter your phone number</Text>
-              <Text style={styles.subtitle}>Enter your phone number below to create your account.</Text>
+              <Text style={styles.subtitle}>If you don’t have an account yet, you will be able to sign up.</Text>
             </View>
-
             <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
               <View style={styles.phoneField}>
                 <TouchableOpacity
@@ -178,9 +171,7 @@ export default function EnterPhoneScreen({ navigation }) {
                   <Text style={styles.flagBig}>{country.flag}</Text>
                   <Text style={styles.codeText}>+{country.callingCode}</Text>
                 </TouchableOpacity>
-
                 <View style={styles.divider} />
-
                 <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => inputRef.current?.focus()}>
                   <TextInput
                     ref={inputRef}
@@ -192,17 +183,15 @@ export default function EnterPhoneScreen({ navigation }) {
                     style={styles.phoneInput}
                     maxLength={40}
                     returnKeyType="done"
-                    onSubmitEditing={() => pushVerify('register')}
+                    onSubmitEditing={() => goNext('register')}
                   />
                 </TouchableOpacity>
               </View>
             </View>
-
             <View style={{ flex: 1 }} />
-
             <View style={styles.bottom}>
               <TouchableOpacity
-                onPress={() => pushVerify('register')}
+                onPress={() => goNext('register')}
                 activeOpacity={0.9}
                 disabled={!canContinue}
                 style={[styles.cta, !canContinue && styles.ctaDisabled]}
@@ -210,15 +199,13 @@ export default function EnterPhoneScreen({ navigation }) {
               >
                 <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>Continue</Text>
               </TouchableOpacity>
-
               <Text style={styles.footerText}>
-                Do you have an account ? <Text onPress={() => pushVerify('login')} style={styles.footerLink}>Log in</Text>
+                Already have an account? <Text onPress={() => goNext('login')} style={styles.footerLink}>Log in</Text>
               </Text>
             </View>
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
-
       <CountrySelectModal
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}

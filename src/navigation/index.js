@@ -27,7 +27,7 @@ export default function StackNav() {
       }}
     >
       <Stack.Screen name="LoginSplash" component={LoginSplashScreen} options={{ animation: 'fade' }} />
-      <Stack.Screen name="EnterPhone" component={EnterPhoneScreen} options={{ animation: 'slide_from_right', gestureEnabled: false }} />
+      <Stack.Screen name="EnterPhone" component={EnterPhoneScreen} options={{ animation: 'slide_from_left', gestureEnabled: false }} />
       <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="ChooseTag" component={ChooseTagScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="SetPin" component={SetPinScreen} options={{ animation: 'slide_from_right' }} />
