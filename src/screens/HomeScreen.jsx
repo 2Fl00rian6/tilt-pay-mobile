@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Path, Rect, Circle } from 'react-native-svg';
-import { getCurrentPhone, getToken, wipeAllLocalData } from '../utils/authStorage';
+import { getCurrentUsername, getToken, wipeAllLocalData } from '../utils/authStorage';
 import { getBalance } from '../api/wallet';
 import { useError } from '../context/ErrorContext';
 
@@ -58,7 +58,7 @@ export default function HomeScreen({ navigation, route }) {
   useEffect(() => {
     (async () => {
       try {
-        const p = await getCurrentPhone();
+        const p = await getCurrentUsername();
         setPhone(p || '');
         setTag(tagFromParams || (p ? `user-${String(p).slice(-4)}` : 'user'));
 
@@ -165,7 +165,10 @@ export default function HomeScreen({ navigation, route }) {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.bigBtn, styles.bigBtnDark]}>
+          <TouchableOpacity
+            style={[styles.bigBtn, styles.bigBtnDark]}
+            onPress={() => navigation.navigate('SendMethod')}  
+          >
             <View style={styles.bigBtnRow}>
               <Text style={styles.bigBtnText}>Send</Text>
               <IconArrowUpRight size={18} color="#fff" />

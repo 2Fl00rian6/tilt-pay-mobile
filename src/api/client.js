@@ -1,8 +1,6 @@
-// src/api/client.js
 const BASE_URL = 'http://ec2-35-180-103-125.eu-west-3.compute.amazonaws.com';
 
 export function normalizePhoneKeepPlus(input) {
-  // retire uniquement les espaces, garde le "+"
   return String(input || '').replace(/\s+/g, '');
 }
 

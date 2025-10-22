@@ -1,3 +1,4 @@
+// src/screens/EnterPhoneScreen.jsx
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
@@ -140,26 +141,41 @@ export default function EnterPhoneScreen({ navigation }) {
     setNsn(v);
   };
 
-  const goNext = async (mode) => {
+  const goLoginPin = async () => {
     if (!canContinue) { showError('Enter a valid phone number', { position: 'top' }); return; }
     inputRef.current?.blur();
     await awaitKeyboardHide();
     const dialCode = `+${country.callingCode}`;
     const phoneDisplay = `${dialCode} ${formattedNational}`;
-    navigation.navigate('ChooseTag', { dialCode, nsn, phoneDisplay, mode });
+    navigation.navigate('LoginPin', { dialCode, nsn, phoneDisplay });
+  };
+
+  const goSignup = async () => {
+    if (!canContinue) { showError('Enter a valid phone number', { position: 'top' }); return; }
+    inputRef.current?.blur();
+    await awaitKeyboardHide();
+    const dialCode = `+${country.callingCode}`;
+    const phoneDisplay = `${dialCode} ${formattedNational}`;
+    // Inscription: d’abord choix du tag
+    navigation.navigate('ChooseTag', { dialCode, nsn, phoneDisplay });
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <HeaderBar title="" onBack={undefined} />
+
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.container}>
             <View style={styles.handleWrap}><View style={styles.handle} /></View>
+
             <View style={{ paddingHorizontal: 24 }}>
-              <Text style={styles.title}>Enter your phone number</Text>
-              <Text style={styles.subtitle}>If you don’t have an account yet, you will be able to sign up.</Text>
+              <Text style={styles.title}>Log in with your phone</Text>
+              <Text style={styles.subtitle}>
+                Enter your number to continue. If you don’t have an account yet, you can create one below.
+              </Text>
             </View>
+
             <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
               <View style={styles.phoneField}>
                 <TouchableOpacity
@@ -171,7 +187,9 @@ export default function EnterPhoneScreen({ navigation }) {
                   <Text style={styles.flagBig}>{country.flag}</Text>
                   <Text style={styles.codeText}>+{country.callingCode}</Text>
                 </TouchableOpacity>
+
                 <View style={styles.divider} />
+
                 <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => inputRef.current?.focus()}>
                   <TextInput
                     ref={inputRef}
@@ -183,29 +201,36 @@ export default function EnterPhoneScreen({ navigation }) {
                     style={styles.phoneInput}
                     maxLength={40}
                     returnKeyType="done"
-                    onSubmitEditing={() => goNext('register')}
+                    onSubmitEditing={goLoginPin}
                   />
                 </TouchableOpacity>
               </View>
             </View>
+
             <View style={{ flex: 1 }} />
+
             <View style={styles.bottom}>
+              {/* Primary: Login (num + PIN) */}
               <TouchableOpacity
-                onPress={() => goNext('register')}
+                onPress={goLoginPin}
                 activeOpacity={0.9}
                 disabled={!canContinue}
                 style={[styles.cta, !canContinue && styles.ctaDisabled]}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>Continue</Text>
+                <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>
+                  Continue
+                </Text>
               </TouchableOpacity>
+
+              {/* Secondary: Create account */}
               <Text style={styles.footerText}>
-                Already have an account? <Text onPress={() => goNext('login')} style={styles.footerLink}>Log in</Text>
+                New here? <Text onPress={goSignup} style={styles.footerLink}>Create an account</Text>
               </Text>
             </View>
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+
       <CountrySelectModal
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}

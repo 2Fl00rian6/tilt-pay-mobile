@@ -1,6 +1,4 @@
-import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
 import LoginSplashScreen from '../screens/LoginSplashScreen';
 import EnterPhoneScreen from '../screens/EnterPhoneScreen';
 import VerifyCodeScreen from '../screens/VerifyCodeScreen';
@@ -12,6 +10,9 @@ import HomeScreen from '../screens/HomeScreen';
 import ReceiveSelectScreen from '../screens/ReceiveSelectScreen';
 import ReceiveWithTagScreen from '../screens/ReceiveWithTagScreen';
 import ReceiveTapToPayScreen from '../screens/ReceiveTapToPayScreen';
+import SendMethodScreen from '../screens/SendMethodScreen';
+import SendTapToPayScreen from '../screens/SendTapToPayScreen';
+import SendEnterAmountScreen from '../screens/SendEnterAmountScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,9 @@ export default function StackNav() {
       <Stack.Screen name="ReceiveSelect" component={ReceiveSelectScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="ReceiveWithTag" component={ReceiveWithTagScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="ReceiveTapToPay" component={ReceiveTapToPayScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SendMethod" component={SendMethodScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SendEnterAmount" component={SendEnterAmountScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SendTapToPay" component={SendTapToPayScreen} options={{ animation: 'fade' }} />
     </Stack.Navigator>
   );
 }

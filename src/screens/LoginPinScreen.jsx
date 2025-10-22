@@ -6,14 +6,16 @@ import PinDots from '../components/PinDots';
 import Keypad from '../components/Keypad';
 import { useError } from '../context/ErrorContext';
 import { login } from '../api/auth';
-import { setToken } from '../utils/authStorage';
+import { setToken, setCurrentUsername } from '../utils/authStorage';
 
 const PIN_LEN = 4;
 
 export default function LoginPinScreen({ route, navigation }) {
   const { showError } = useError();
+
   const dialCode = route?.params?.dialCode || '+33';
   const nsn = route?.params?.nsn || '';
+  const phoneDisplay = route?.params?.phoneDisplay || `${dialCode} ${nsn}`;
   const phoneNumber = `${dialCode}${nsn}`;
 
   const [pin, setPin] = useState('');
@@ -31,6 +33,7 @@ export default function LoginPinScreen({ route, navigation }) {
         const token = res?.access_token;
         if (!token) throw new Error('Missing access_token');
         await setToken(phoneNumber, token);
+        await setCurrentUsername(phoneNumber);
         navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
       } catch (e) {
         showError(e?.text || e?.message || 'Login failed', { position: 'top' });
@@ -46,13 +49,16 @@ export default function LoginPinScreen({ route, navigation }) {
       <HeaderBar title="" onBack={() => navigation.goBack()} />
       <View style={styles.container}>
         <View style={styles.handleWrap}><View style={styles.handle} /></View>
+
         <View style={{ paddingHorizontal: 24 }}>
           <Text style={styles.title}>Enter your PIN</Text>
-          <Text style={styles.subtitle}>We’ll log you in securely.</Text>
+          <Text style={styles.subtitle}>Phone: {phoneDisplay}</Text>
         </View>
+
         <View style={styles.dotsWrap}>
           <PinDots value={pin} length={PIN_LEN} />
         </View>
+
         <View style={{ flex: 1 }} />
         <View style={styles.kpWrap} pointerEvents={sending ? 'none' : 'auto'}>
           <Keypad onKey={onKey} onBackspace={onBackspace} />
@@ -72,6 +78,5 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, lineHeight: 20, color:'#6B7280' },
 
   dotsWrap: { alignItems: 'center', marginTop: 24 },
-
   kpWrap: { paddingBottom: 8 },
 });
