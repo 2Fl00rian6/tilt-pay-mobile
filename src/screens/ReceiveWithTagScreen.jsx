@@ -1,4 +1,3 @@
-import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet } from 'react-native';
 import HeaderBar from '../components/HeaderBar';

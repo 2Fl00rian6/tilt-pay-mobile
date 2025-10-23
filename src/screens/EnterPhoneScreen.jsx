@@ -1,4 +1,3 @@
-// src/screens/EnterPhoneScreen.jsx
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,

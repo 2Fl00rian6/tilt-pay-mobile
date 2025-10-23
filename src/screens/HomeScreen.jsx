@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -167,7 +166,7 @@ export default function HomeScreen({ navigation, route }) {
 
           <TouchableOpacity
             style={[styles.bigBtn, styles.bigBtnDark]}
-            onPress={() => navigation.navigate('SendMethod')}  
+            onPress={() => navigation.navigate('SendMethod')}
           >
             <View style={styles.bigBtnRow}>
               <Text style={styles.bigBtnText}>Send</Text>

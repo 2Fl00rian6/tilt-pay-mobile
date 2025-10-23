@@ -1,44 +1,35 @@
+// src/screens/SendMethodScreen.jsx
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import HeaderBar from '../components/HeaderBar';
 import { Svg, Path } from 'react-native-svg';
 
-const Row = ({ icon, title, onPress, disabled }) => (
-  <TouchableOpacity
-    onPress={onPress}
-    disabled={disabled}
-    activeOpacity={0.9}
-    style={[styles.row, disabled && { opacity: 0.45 }]}
-  >
-    <View style={styles.rowIcon}>{icon}</View>
-    <Text style={styles.rowText}>{title}</Text>
-  </TouchableOpacity>
+const Row = ({ icon, title, delay, onPress }) => (
+  <Animated.View entering={FadeInDown.springify().damping(16).delay(delay)} style={styles.row}>
+    <TouchableOpacity style={styles.rowBtn} onPress={onPress} activeOpacity={0.85}>
+      {icon}
+      <Text style={styles.rowText}>{title}</Text>
+    </TouchableOpacity>
+  </Animated.View>
 );
 
 const IconUsers = ({ size=22, color='#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M20 21a7 7 0 0 0-14 0M15.5 7.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+    <Path d="M17 21V19c0-1.06-.42-2.08-1.17-2.83C15.08 15.42 14.06 15 13 15H5c-1.06 0-2.08.42-2.83 1.17C1.42 16.92 1 17.94 1 19v2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 const IconNfc = ({ size=22, color='#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M5 7a7 7 0 0 1 14 0v10a7 7 0 0 1-14 0V7Z" stroke={color} strokeWidth="1.8"/>
-    <Path d="M9 9a5 5 0 0 1 6 0m-5 3a3 3 0 0 1 4 0m-3 3a1 1 0 1 1 2 0" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
-  </Svg>
-);
-const IconBank = ({ size=22, color='#111' }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M4 9h16M6 9v7m4-7v7m4-7v7m4-7v7M3 20h18M12 4 3 8h18L12 4Z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M6 8.3c.64 1.12.98 2.39.98 3.7 0 1.29-.34 2.56-.98 3.68M9.46 6.21C10.46 7.98 10.99 9.97 10.99 12s-.53 4.02-1.53 5.79M12.91 4.1c1.38 2.4 2.11 5.12 2.11 7.9s-.73 5.5-2.0 7.9M16.37 2c1.74 3.05 2.66 6.49 2.66 10s-.92 6.95-2.66 10" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 
-export default function SendMethodScreen({ navigation, route }) {
-  const amount = route?.params?.amount ?? null;
-
-  const gotoAmount = (mode) => {
-    navigation.navigate('SendEnterAmount', { mode }); // 'tag' | 'tap'
-  };
+export default function SendMethodScreen({ route, navigation }) {
+  const amount = route?.params?.amount ?? 0;
+  const currency = route?.params?.currency ?? 'USD';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top','bottom']}>
@@ -48,11 +39,21 @@ export default function SendMethodScreen({ navigation, route }) {
 
         <Text style={styles.title}>Send money with</Text>
 
-        <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
-          <Row title="Tag" icon={<IconUsers />} onPress={() => gotoAmount('tag')} />
-          <Row title="Tap to pay" icon={<IconNfc />} onPress={() => gotoAmount('tap')} />
-          <Row title="Bank transfer" icon={<IconBank />} disabled onPress={() => {}} />
-        </View>
+        <Row
+          delay={80}
+          icon={<IconUsers />}
+          title="Tag"
+          onPress={() => {/* à brancher plus tard */}}
+        />
+        <Row
+          delay={140}
+          icon={<IconNfc />}
+          title="Tap to pay"
+          onPress={() => navigation.navigate('SendTapToPay', { amount, currency })}
+        />
+        <Animated.View entering={FadeInDown.delay(220)}>
+          <Text style={styles.note}>Bank transfer (soon)</Text>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -60,12 +61,13 @@ export default function SendMethodScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safe: { flex:1, backgroundColor:'#fff' },
-  container: { flex:1, backgroundColor:'#fff' },
-  handleWrap: { alignItems: 'center', marginTop: 4, marginBottom: 12 },
-  handle: { width: 36, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2 },
-  title: { fontSize: 20, fontWeight:'700', color:'#111', paddingHorizontal: 20, marginTop: 6 },
+  container: { flex:1, paddingTop: 16 },
+  handleWrap: { alignItems:'center', marginBottom: 24 },
+  handle: { width:36, height:4, backgroundColor:'#D1D5DB', borderRadius: 2 },
+  title: { fontSize:20, lineHeight:28, fontWeight:'600', color:'#111827', marginBottom: 12, paddingHorizontal: 20 },
 
-  row: { height: 56, borderRadius: 14, flexDirection:'row', alignItems:'center', paddingHorizontal: 14, marginBottom: 10, backgroundColor:'#F8F9FB' },
-  rowIcon: { width: 28, alignItems:'center', marginRight: 12 },
-  rowText: { fontSize: 16, color:'#111827', fontWeight:'600' },
+  row: { paddingHorizontal: 20, marginBottom: 8 },
+  rowBtn: { height:56, borderRadius:16, backgroundColor:'#F6F7F8', paddingHorizontal:14, flexDirection:'row', alignItems:'center', gap:12 },
+  rowText: { fontSize:16, color:'#111827', fontWeight:'600' },
+  note: { marginTop: 24, paddingHorizontal: 20, color: '#C2C6CC', textDecorationLine:'line-through' },
 });

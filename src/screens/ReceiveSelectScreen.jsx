@@ -1,7 +1,7 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Path } from 'react-native-svg';
+import HeaderBar from '../components/HeaderBar'; // ⬅️ flèche de retour
 
 export const IconUsers = ({ size = 22, color = '#48484A' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -32,6 +32,9 @@ export const IconNfc = ({ size = 22, color = '#48484A' }) => (
 export default function ReceiveSelectScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      {/* ⬅️ Flèche de retour */}
+      <HeaderBar title="" onBack={() => navigation.goBack()} />
+
       <View style={styles.container}>
         <View style={styles.handleWrap}><View style={styles.handle} /></View>
 

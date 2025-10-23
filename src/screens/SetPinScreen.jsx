@@ -1,4 +1,3 @@
-// src/screens/SetPinScreen.jsx
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

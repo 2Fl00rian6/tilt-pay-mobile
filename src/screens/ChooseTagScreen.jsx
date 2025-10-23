@@ -1,4 +1,3 @@
-// src/screens/ChooseTagScreen.jsx
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
