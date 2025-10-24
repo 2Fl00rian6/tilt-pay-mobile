@@ -6,7 +6,7 @@ import HeaderBar from '../components/HeaderBar';
 import { useError } from '../context/ErrorContext';
 import { useP2P } from '../p2p/useP2P';
 import { approveTapToPayRequest } from '../api/tapToPay';
-import { getCurrentPhone, getToken } from '../utils/authStorage';
+import { getCurrentUsername, getToken } from '../utils/authStorage';
 
 export default function ReceiveTapToPayScreen({ navigation }) {
   const { showError } = useError();

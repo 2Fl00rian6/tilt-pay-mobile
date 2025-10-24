@@ -1,5 +1,6 @@
 {
   "expo": {
+    "jsEngine": "hermes",
     "name": "Tilt Pay",
     "slug": "tilt-pay",
     "version": "1.0.0",
@@ -12,11 +13,24 @@
       "backgroundColor": "#FCFCFC"
     },
     "ios": {
-      "bundleIdentifier": "com.tilt.pay",
-      "supportsTablet": false
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "ec2-35-180-103-125.eu-west-3.compute.amazonaws.com": {
+              "NSIncludesSubdomains": true,
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true,
+              "NSTemporaryExceptionMinimumTLSVersion": "TLSv1.2"
+            }
+          }
+        }
+      },
+      "bundleIdentifier": "com.tilt.pay"
     },
     "android": {
       "package": "com.tilt.pay",
+      "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true,
       "splash": {
         "image": "./assets/splash-logo.png",
         "resizeMode": "contain",
@@ -25,8 +39,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground.png",
         "backgroundColor": "#FCFCFC"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "plugins": [
       "expo-secure-store"

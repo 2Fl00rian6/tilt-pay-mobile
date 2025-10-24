@@ -1,4 +1,4 @@
-package com.tiltpay
+package com.tilt.pay
 
 import android.app.Application
 import android.content.res.Configuration

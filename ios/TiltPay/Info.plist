@@ -40,12 +40,31 @@
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
-      <false/>
-      <key>NSAllowsLocalNetworking</key>
       <true/>
+      <key>NSExceptionDomains</key>
+      <dict>
+        <key>ec2-35-180-103-125.eu-west-3.compute.amazonaws.com</key>
+        <dict>
+          <key>NSIncludesSubdomains</key>
+          <true/>
+          <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+          <true/>
+          <key>NSTemporaryExceptionMinimumTLSVersion</key>
+          <string>TLSv1.2</string>
+        </dict>
+      </dict>
     </dict>
+    <key>NSBonjourServices</key>
+    <array>
+      <string>_tiltpay-p2p._tcp</string>
+      <string>_tiltpay-p2p._udp</string>
+      <string>_tiltpay-p2p._tcp</string>
+      <string>_tiltpay-p2p._udp</string>
+    </array>
     <key>NSFaceIDUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>TiltPay uses your local network (Bluetooth/Wi-Fi) to discover nearby phones for Tap to Pay.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>UILaunchStoryboardName</key>

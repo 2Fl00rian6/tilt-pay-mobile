@@ -42,13 +42,29 @@ export async function createAccount({ phoneNumber, fullName, tagName, pin }) {
 // Login (NSN + PIN) -> { access_token }
 export async function login({ phoneNumber, pin }) {
   const phone = normalizePhoneKeepPlus(phoneNumber);
-  console.log(phoneNumber);
+
+  // Garde le + et uniquement des digits ensuite
+  if (!/^\+\d{6,15}$/.test(phone)) {
+    const e = new Error('Invalid phone format (must be + and digits)');
+    e.code = 'E_INVALID_PHONE';
+    throw e;
+  }
+  if (!pin || String(pin).length < 4) {
+    const e = new Error('Invalid PIN');
+    e.code = 'E_INVALID_PIN';
+    throw e;
+  }
+
   try {
-    return await http.post('/auth/login', {
+    console.log('[login] POST /auth/login', { phoneNumber: phone, code: String(pin) });
+    const res = await http.post('/auth/login', {
       phoneNumber: phone,
       code: String(pin),
     });
+    return res;
   } catch (err) {
+    // Ajoute un log pour les erreurs réseau du simulateur
+    console.log('[login] fetch failed', { message: err?.message, code: err?.code, status: err?.status });
     throw parseApiError(err);
   }
 }

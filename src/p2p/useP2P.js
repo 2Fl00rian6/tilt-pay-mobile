@@ -1,174 +1,162 @@
 // src/p2p/useP2P.js
-import React from 'react';
-import { Platform, NativeModules, NativeEventEmitter } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
-const MP = NativeModules?.MultipeerConnectivity || null;
-const emitter = MP ? new NativeEventEmitter(MP) : null;
-
-const has = (fnName) => typeof MP?.[fnName] === 'function';
-
-// Quick helper to log once without crashing if module is absent
-const safeCall = async (fnName, ...args) => {
-  try {
-    if (has(fnName)) {
-      const res = await MP[fnName](...args);
-      return res;
-    }
-  } catch (err) {
-    const msg = err?.message ?? String(err);
-    console.warn(`[Multipeer] ${fnName} error:`, msg);
-  }
-  return undefined;
+// Essayons plusieurs libs courantes
+const getNative = () => {
+  // 1) react-native-multipeer
+  if (NativeModules.MultipeerConnectivity) return { name: 'react-native-multipeer', mod: NativeModules.MultipeerConnectivity };
+  if (NativeModules.Multipeer) return { name: 'react-native-multipeer', mod: NativeModules.Multipeer };
+  // 2) (aucune) -> null
+  return null;
 };
 
-// Small in-memory listeners list for message callbacks
-function createSubStore() {
-  const subs = new Set();
-  return {
-    add(cb) {
-      subs.add(cb);
-      return () => subs.delete(cb);
-    },
-    emit(payload) {
-      for (const cb of subs) {
-        try { cb(payload); } catch (e) { console.warn('[P2P] onMessage cb error', e?.message ?? e); }
-      }
-    },
-  };
-}
+// Règles Apple: 1-15 chars, [a-z0-9-]
+const SERVICE_TYPE = 'tiltpayp2p';
 
-export function useP2P({ displayName = 'Tilt Device' } = {}) {
-  const [ready, setReady] = React.useState(false);
-  const [peers, setPeers] = React.useState([]); // [{id,name,state}]
-  const [connectedIds, setConnectedIds] = React.useState(new Set());
+export function useP2P({ displayName = 'Tilt User' } = {}) {
+  const nativeInfo = getNative();
+  const native = nativeInfo?.mod ?? null;
 
-  const subsRef = React.useRef(createSubStore());
+  const [ready, setReady] = useState(!!native && Platform.OS === 'ios');
+  const [started, setStarted] = useState(false);
+  const [peers, setPeers] = useState([]); // [{id, name, state}]
+  const [connected, setConnected] = useState(false);
 
-  // --- Init / teardown
-  React.useEffect(() => {
-    let cancelled = false;
+  // Event bus
+  const emitter = useMemo(() => (native ? new NativeEventEmitter(native) : null), [native]);
+  const msgHandlersRef = useRef(new Set());
 
-    (async () => {
-      try {
-        // Optional initialize
-        if (has('initialize')) {
-          await safeCall('initialize', { displayName });
-        }
-
-        // Start advertise/browse if available
-        if (has('advertise')) await safeCall('advertise');
-        if (has('browse')) await safeCall('browse');
-
-        // Bind native events if emitter exists
-        if (emitter) {
-          const foundSub = emitter.addListener('peerFound', (p) => {
-            if (cancelled) return;
-            setPeers((prev) => {
-              const next = prev.filter((x) => x.id !== p?.id);
-              next.push({ id: p?.id, name: p?.name ?? 'Nearby device', state: 'found' });
-              return next;
-            });
-          });
-
-          const lostSub = emitter.addListener('peerLost', (p) => {
-            if (cancelled) return;
-            setPeers((prev) => prev.filter((x) => x.id !== p?.id));
-            setConnectedIds((prev) => {
-              const n = new Set(prev);
-              if (p?.id) n.delete(p.id);
-              return n;
-            });
-          });
-
-          const stateSub = emitter.addListener('peerChangedState', (e) => {
-            if (cancelled) return;
-            const { id, state } = e || {};
-            setPeers((prev) => prev.map((x) => (x.id === id ? { ...x, state } : x)));
-            setConnectedIds((prev) => {
-              const n = new Set(prev);
-              if (state === 'connected') n.add(id);
-              else n.delete(id);
-              return n;
-            });
-          });
-
-          const msgSub = emitter.addListener('messageReceived', (e) => {
-            const payload = { fromPeerId: e?.fromPeerId, message: e?.message };
-            subsRef.current.emit(payload);
-          });
-
-          // Teardown
-          return () => {
-            try { foundSub?.remove?.(); } catch {}
-            try { lostSub?.remove?.(); } catch {}
-            try { stateSub?.remove?.(); } catch {}
-            try { msgSub?.remove?.(); } catch {}
-          };
-        }
-      } catch (err) {
-        const msg = err?.message ?? String(err);
-        console.warn('[Multipeer] init error:', msg);
-      } finally {
-        if (!cancelled) setReady(true); // even if native missing → stay “ready” in stub mode
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      // Stop scan/ads if available
-      safeCall('stopAdvertising');
-      safeCall('stopBrowsing');
-    };
-  }, [displayName]);
-
-  // --- Public API
-
-  // Connect to a peer id
-  const connect = React.useCallback(async (peerId) => {
-    if (!peerId) return false;
-    if (has('invitePeer')) {
-      await safeCall('invitePeer', String(peerId));
-      return true;
+  // ----- Safe wrappers -----
+  const safeCall = useCallback(async (fnName, ...args) => {
+    if (!native || typeof native[fnName] !== 'function') {
+      console.warn('[Multipeer] method not available:', fnName);
+      return null;
     }
-    // Fallback: mark as "connected" locally (for demo mode)
-    setPeers((prev) => prev.map((p) => (p.id === peerId ? { ...p, state: 'connected' } : p)));
-    setConnectedIds((prev) => new Set(prev).add(peerId));
-    return true;
+    try {
+      const r = native[fnName](...args);
+      return r?.then ? await r : r;
+    } catch (e) {
+      console.warn('[Multipeer] call error:', fnName, e?.message || e);
+      return null;
+    }
+  }, [native]);
+
+  const start = useCallback(async () => {
+    if (!ready || started) return;
+    if (!native) {
+      console.warn('[Multipeer] native module missing. Did you prebuild & pod install?');
+      return;
+    }
+    // Beaucoup de libs n’exigent pas initialize(); si elle existe, on tente.
+    await safeCall('initialize', { serviceType: SERVICE_TYPE, displayName }).catch(() => {});
+    await safeCall('advertise', SERVICE_TYPE, displayName);
+    await safeCall('browse', SERVICE_TYPE);
+    setStarted(true);
+  }, [ready, started, native, safeCall, displayName]);
+
+  const stop = useCallback(async () => {
+    if (!native) return;
+    await safeCall('stopAdvertising');
+    await safeCall('stopBrowsing');
+    setStarted(false);
+  }, [native, safeCall]);
+
+  const connect = useCallback(async (peerId) => {
+    if (!peerId) return;
+    await safeCall('invitePeer', peerId);
+  }, [safeCall]);
+
+  const sendString = useCallback(async (peerId, text) => {
+    // Certaines libs envoient à tous si peerId omis
+    const ok = await safeCall('sendString', text, peerId);
+    return !!ok;
+  }, [safeCall]);
+
+  const sendJson = useCallback(async (payload, peerId) => {
+    try {
+      return await sendString(peerId, JSON.stringify(payload));
+    } catch {
+      return false;
+    }
+  }, [sendString]);
+
+  const onMessage = useCallback((listener) => {
+    msgHandlersRef.current.add(listener);
+    return () => msgHandlersRef.current.delete(listener);
   }, []);
 
-  // Send JSON message to connected peers
-  const sendJson = React.useCallback(
-    async (obj) => {
-      const str = (() => {
-        try { return JSON.stringify(obj); } catch { return String(obj); }
-      })();
-      if (has('sendString')) {
-        await safeCall('sendString', str);
-        return true;
-      }
-      console.log('[P2P:fallback] sendJson ->', str);
-      return true; // consider “sent” in fallback
-    },
-    []
-  );
+  // ----- Events wiring -----
+  useEffect(() => {
+    if (!emitter) return;
+    const subs = [];
 
-  // Subscribe to incoming messages
-  const onMessage = React.useCallback((cb) => {
-    if (typeof cb !== 'function') return () => {};
-    return subsRef.current.add(cb);
-  }, []);
+    // Pairing / peers list
+    if (native?.addListener || emitter.addListener) {
+      subs.push(
+        emitter.addListener('peerFound', (p) => {
+          setPeers((prev) => {
+            const idx = prev.findIndex(x => x.id === p?.id);
+            const next = [...prev];
+            const row = { id: String(p?.id ?? p?.peerID ?? Math.random()), name: p?.name || p?.displayName || 'Nearby device', state: p?.state || 'found' };
+            if (idx >= 0) next[idx] = row; else next.push(row);
+            return next;
+          });
+        }),
+      );
+      subs.push(
+        emitter.addListener('peerLost', (p) => {
+          setPeers((prev) => prev.filter(x => x.id !== (p?.id ?? p?.peerID)));
+        }),
+      );
+      subs.push(
+        emitter.addListener('peerConnected', (p) => {
+          setConnected(true);
+          setPeers((prev) => {
+            const id = String(p?.id ?? p?.peerID ?? '');
+            return prev.map((x) => x.id === id ? { ...x, state: 'connected' } : x);
+          });
+        }),
+      );
+      subs.push(
+        emitter.addListener('peerDisconnected', (p) => {
+          setConnected(false);
+          setPeers((prev) => {
+            const id = String(p?.id ?? p?.peerID ?? '');
+            return prev.map((x) => x.id === id ? { ...x, state: 'disconnected' } : x);
+          });
+        }),
+      );
+      subs.push(
+        emitter.addListener('receiveString', (evt) => {
+          const message = evt?.message ?? evt?.string ?? '';
+          const peerId = evt?.peerID ?? evt?.peerId ?? 'unknown';
+          msgHandlersRef.current.forEach((fn) => {
+            try { fn({ peerId, message }); } catch {}
+          });
+        }),
+      );
+    }
 
-  // Connected when at least one peer is connected
-  const connected = connectedIds.size > 0;
+    return () => subs.forEach(s => { try { s.remove(); } catch {} });
+  }, [emitter, native]);
+
+  // Auto start (iOS uniquement)
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    start();
+    return () => { stop(); };
+  }, [start, stop]);
 
   return {
-    ready,
-    peers,
-    connected,
+    ready,           // true si le module natif est dispo (iOS)
+    started,         // advertising/browsing lancés
+    peers,           // [{id, name, state}]
+    connected,       // bool
     connect,
+    sendString,
     sendJson,
     onMessage,
+    _nativeName: nativeInfo?.name ?? null,
   };
 }
-
-export default useP2P;
