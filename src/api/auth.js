@@ -4,12 +4,6 @@ import { http, normalizePhoneKeepPlus, parseApiError } from './client';
 // Vérifie l’OTP (6 digits) — envoie NSN (15 chiffres)
 export async function verifyAccount({ phoneNumber, token }) {
   const phone = normalizePhoneKeepPlus(phoneNumber);
-  if (phone.length !== 15) {
-    const e = new Error('Verify Account : Phone number must be 15 digits');
-    e.status = 422;
-    e.code = 'E_VALIDATION_ERROR';
-    throw e;
-  }
   try {
     return await http.post('/auth/verify-account', { phoneNumber: phone, token });
   } catch (err) {

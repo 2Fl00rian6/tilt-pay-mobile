@@ -1,125 +1,165 @@
 // src/p2p/useP2P.js
-import { useEffect, useRef, useState, useCallback } from 'react';
-import * as MultipeerImport from 'react-native-multipeer';
+import React from 'react';
+import { Platform, NativeModules, NativeEventEmitter } from 'react-native';
 
-// serviceType: 1–15 chars, [a-z0-9]
-const SERVICE = 'tiltp2p';
+const MP = NativeModules?.MultipeerConnectivity || null;
+const emitter = MP ? new NativeEventEmitter(MP) : null;
 
-function resolveMC() {
-  const MC = MultipeerImport?.default ?? MultipeerImport ?? {};
-  // Mappe des alias possibles selon les versions
-  const api = {
-    initialize: MC.initialize || MC.init || MC.start || null,
-    advertise: MC.advertise || MC.startAdvertising || MC.startAdvertisingPeer || null,
-    browse: MC.browse || MC.startBrowsing || MC.startBrowsingForPeers || null,
-    stopAdvertising: MC.stopAdvertising || MC.stopAdvertisingPeer || MC.unadvertise || null,
-    stopBrowsing: MC.stopBrowsing || MC.stopBrowsingForPeers || MC.unbrowse || null,
-    disconnect: MC.disconnect || MC.disconnectPeer || null,
-    invitePeer: MC.invitePeer || MC.invite || null,
-    sendString: MC.sendString || MC.send || null,
-    on: MC.on || MC.addListener || null,
-    removeAllListeners: MC.removeAllListeners?.bind?.(MC) || MC.removeAllListeners || null,
-    raw: MC,
+const has = (fnName) => typeof MP?.[fnName] === 'function';
+
+// Quick helper to log once without crashing if module is absent
+const safeCall = async (fnName, ...args) => {
+  try {
+    if (has(fnName)) {
+      const res = await MP[fnName](...args);
+      return res;
+    }
+  } catch (err) {
+    const msg = err?.message ?? String(err);
+    console.warn(`[Multipeer] ${fnName} error:`, msg);
+  }
+  return undefined;
+};
+
+// Small in-memory listeners list for message callbacks
+function createSubStore() {
+  const subs = new Set();
+  return {
+    add(cb) {
+      subs.add(cb);
+      return () => subs.delete(cb);
+    },
+    emit(payload) {
+      for (const cb of subs) {
+        try { cb(payload); } catch (e) { console.warn('[P2P] onMessage cb error', e?.message ?? e); }
+      }
+    },
   };
-  return api;
 }
 
-export function useP2P({ displayName }) {
-  const [peers, setPeers] = useState([]);          // [{id, name, state}]
-  const [connected, setConnected] = useState(false);
-  const [ready, setReady] = useState(false);
+export function useP2P({ displayName = 'Tilt Device' } = {}) {
+  const [ready, setReady] = React.useState(false);
+  const [peers, setPeers] = React.useState([]); // [{id,name,state}]
+  const [connectedIds, setConnectedIds] = React.useState(new Set());
 
-  const onFoundRef = useRef();
-  const onLostRef = useRef();
-  const onConnectedRef = useRef();
-  const onDisconnectedRef = useRef();
-  const onReceiveRef = useRef();
+  const subsRef = React.useRef(createSubStore());
 
-  useEffect(() => {
-    const MC = resolveMC();
+  // --- Init / teardown
+  React.useEffect(() => {
+    let cancelled = false;
 
-    // Log de debug pour voir les méthodes dispo côté natif
-    if (__DEV__) {
-      console.log('[Multipeer] available keys:', Object.keys(MC.raw || {}));
-      console.log('[Multipeer] resolved api:', {
-        initialize: !!MC.initialize, advertise: !!MC.advertise, browse: !!MC.browse,
-        stopAdvertising: !!MC.stopAdvertising, stopBrowsing: !!MC.stopBrowsing,
-        disconnect: !!MC.disconnect, invitePeer: !!MC.invitePeer, sendString: !!MC.sendString,
-        on: !!MC.on, removeAllListeners: !!MC.removeAllListeners,
-      });
-    }
-
-    // Abonnements d’événements (si .on dispo)
-    MC.on?.('peerFound', (peer) => {
-      setPeers((p) => (p.find(x => x.id === peer.id) ? p : [...p, { ...peer, state: 'found' }]));
-      onFoundRef.current?.(peer);
-    });
-    MC.on?.('peerLost', (peer) => {
-      setPeers((p) => p.filter(x => x.id !== peer.id));
-      onLostRef.current?.(peer);
-    });
-    MC.on?.('peerConnected', (peer) => {
-      setConnected(true);
-      setPeers((p) => p.map(x => x.id === peer.id ? { ...x, state: 'connected' } : x));
-      onConnectedRef.current?.(peer);
-    });
-    MC.on?.('peerDisconnected', (peer) => {
-      setConnected(false);
-      setPeers((p) => p.map(x => x.id === peer.id ? { ...x, state: 'found' } : x));
-      onDisconnectedRef.current?.(peer);
-    });
-    MC.on?.('messageReceived', (event) => {
-      onReceiveRef.current?.(event);
-    });
-
-    // Init + advertise + browse
     (async () => {
       try {
-        if (!MC.initialize) throw new Error('Multipeer.initialize not available (native rebuild needed?)');
-        await MC.initialize(SERVICE, displayName || 'Tilt User');
-
-        if (!MC.advertise || !MC.browse) {
-          throw new Error('advertise/browse not available — check module version or rebuild native app.');
+        // Optional initialize
+        if (has('initialize')) {
+          await safeCall('initialize', { displayName });
         }
-        await MC.advertise(SERVICE);
-        await MC.browse(SERVICE);
 
-        setReady(true);
-      } catch (e) {
-        console.warn('[Multipeer] init error:', e);
+        // Start advertise/browse if available
+        if (has('advertise')) await safeCall('advertise');
+        if (has('browse')) await safeCall('browse');
+
+        // Bind native events if emitter exists
+        if (emitter) {
+          const foundSub = emitter.addListener('peerFound', (p) => {
+            if (cancelled) return;
+            setPeers((prev) => {
+              const next = prev.filter((x) => x.id !== p?.id);
+              next.push({ id: p?.id, name: p?.name ?? 'Nearby device', state: 'found' });
+              return next;
+            });
+          });
+
+          const lostSub = emitter.addListener('peerLost', (p) => {
+            if (cancelled) return;
+            setPeers((prev) => prev.filter((x) => x.id !== p?.id));
+            setConnectedIds((prev) => {
+              const n = new Set(prev);
+              if (p?.id) n.delete(p.id);
+              return n;
+            });
+          });
+
+          const stateSub = emitter.addListener('peerChangedState', (e) => {
+            if (cancelled) return;
+            const { id, state } = e || {};
+            setPeers((prev) => prev.map((x) => (x.id === id ? { ...x, state } : x)));
+            setConnectedIds((prev) => {
+              const n = new Set(prev);
+              if (state === 'connected') n.add(id);
+              else n.delete(id);
+              return n;
+            });
+          });
+
+          const msgSub = emitter.addListener('messageReceived', (e) => {
+            const payload = { fromPeerId: e?.fromPeerId, message: e?.message };
+            subsRef.current.emit(payload);
+          });
+
+          // Teardown
+          return () => {
+            try { foundSub?.remove?.(); } catch {}
+            try { lostSub?.remove?.(); } catch {}
+            try { stateSub?.remove?.(); } catch {}
+            try { msgSub?.remove?.(); } catch {}
+          };
+        }
+      } catch (err) {
+        const msg = err?.message ?? String(err);
+        console.warn('[Multipeer] init error:', msg);
+      } finally {
+        if (!cancelled) setReady(true); // even if native missing → stay “ready” in stub mode
       }
     })();
 
     return () => {
-      // Ne pas appeler de fonctions inexistantes
-      try { MC.stopAdvertising?.(); } catch (e) { if (__DEV__) console.log('stopAdvertising err', e); }
-      try { MC.stopBrowsing?.(); } catch (e) { if (__DEV__) console.log('stopBrowsing err', e); }
-      try { MC.disconnect?.(); } catch (e) { if (__DEV__) console.log('disconnect err', e); }
-      try { MC.removeAllListeners?.(); } catch (e) { if (__DEV__) console.log('removeAllListeners err', e); }
+      cancelled = true;
+      // Stop scan/ads if available
+      safeCall('stopAdvertising');
+      safeCall('stopBrowsing');
     };
   }, [displayName]);
 
-  const connect = useCallback(async (peerId) => {
-    const MC = resolveMC();
-    try {
-      if (!MC.invitePeer) throw new Error('invitePeer not available');
-      await MC.invitePeer(peerId);
-    } catch (e) {
-      console.warn('invitePeer error', e);
+  // --- Public API
+
+  // Connect to a peer id
+  const connect = React.useCallback(async (peerId) => {
+    if (!peerId) return false;
+    if (has('invitePeer')) {
+      await safeCall('invitePeer', String(peerId));
+      return true;
     }
+    // Fallback: mark as "connected" locally (for demo mode)
+    setPeers((prev) => prev.map((p) => (p.id === peerId ? { ...p, state: 'connected' } : p)));
+    setConnectedIds((prev) => new Set(prev).add(peerId));
+    return true;
   }, []);
 
-  const sendJson = useCallback(async (obj) => {
-    const MC = resolveMC();
-    try {
-      if (!MC.sendString) throw new Error('sendString not available');
-      await MC.sendString(JSON.stringify(obj));
-      return true;
-    } catch (e) {
-      console.warn('sendJson error', e);
-      return false;
-    }
+  // Send JSON message to connected peers
+  const sendJson = React.useCallback(
+    async (obj) => {
+      const str = (() => {
+        try { return JSON.stringify(obj); } catch { return String(obj); }
+      })();
+      if (has('sendString')) {
+        await safeCall('sendString', str);
+        return true;
+      }
+      console.log('[P2P:fallback] sendJson ->', str);
+      return true; // consider “sent” in fallback
+    },
+    []
+  );
+
+  // Subscribe to incoming messages
+  const onMessage = React.useCallback((cb) => {
+    if (typeof cb !== 'function') return () => {};
+    return subsRef.current.add(cb);
   }, []);
+
+  // Connected when at least one peer is connected
+  const connected = connectedIds.size > 0;
 
   return {
     ready,
@@ -127,10 +167,8 @@ export function useP2P({ displayName }) {
     connected,
     connect,
     sendJson,
-    onPeerFound: (cb) => (onFoundRef.current = cb),
-    onPeerLost: (cb) => (onLostRef.current = cb),
-    onPeerConnected: (cb) => (onConnectedRef.current = cb),
-    onPeerDisconnected: (cb) => (onDisconnectedRef.current = cb),
-    onMessage: (cb) => (onReceiveRef.current = cb),
+    onMessage,
   };
 }
+
+export default useP2P;

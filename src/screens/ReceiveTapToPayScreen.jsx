@@ -1,44 +1,61 @@
 // src/screens/ReceiveTapToPayScreen.jsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeaderBar from '../components/HeaderBar';
-import { useP2P } from '../p2p/useP2P';
 import { useError } from '../context/ErrorContext';
-import { http } from '../api/client';
+import { useP2P } from '../p2p/useP2P';
+import { approveTapToPayRequest } from '../api/tapToPay';
+import { getCurrentPhone, getToken } from '../utils/authStorage';
 
 export default function ReceiveTapToPayScreen({ navigation }) {
   const { showError } = useError();
-  const { ready, connected, onMessage, sendJson } = useP2P({ displayName: 'Tilt Receiver' });
-  const [incoming, setIncoming] = useState(null); // {token, amount, currency, expiresAt}
-  const [claiming, setClaiming] = useState(false);
-  const [result, setResult] = useState(null);     // claim response
+  const { ready, connected, onMessage, sendJson } = useP2P({ displayName: 'Tilt Receiver', autoAdvertise: true });
 
+  const [incoming, setIncoming] = useState(null); // {requestId, secret, amount, currency}
+  const [approving, setApproving] = useState(false);
+  const [approved, setApproved] = useState(null); // { id, amount, currency }
+
+  // 1) Réception du token via P2P
   useEffect(() => {
     onMessage(async ({ message }) => {
       try {
         const data = JSON.parse(message);
-        if (data?.type === 'tiltpay:p2p-intent' && data?.token) {
-          setIncoming({ token: data.token, amount: data.amount, currency: data.currency, expiresAt: data.expiresAt });
-          // envoyer un ack facultatif
-          try { await sendJson({ type: 'tiltpay:p2p-ack' }); } catch {}
-        }
+        if (data?.type !== 'tiltpay:t2p') return;
+        setIncoming({ requestId: data.requestId, secret: data.secret, amount: data.amount, currency: data.currency });
       } catch {}
     });
-  }, [onMessage, sendJson]);
+  }, [onMessage]);
 
-  const claim = async () => {
-    if (!incoming?.token) return;
-    try {
-      setClaiming(true);
-      const resp = await http.post('/p2p/claim', { token: incoming.token });
-      setResult(resp);
-    } catch (e) {
-      showError(e?.text || e?.message || 'Claim failed', { position:'top' });
-    } finally {
-      setClaiming(false);
-    }
-  };
+  // 2) Si on a reçu une demande → approve côté serveur
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!incoming) return;
+      try {
+        setApproving(true);
+        const phone = await getCurrentPhone();
+        const token = phone ? await getToken(phone) : null;
+
+        const res = await approveTapToPayRequest(
+          { requestId: incoming.requestId, secret: incoming.secret },
+          { token }
+        );
+        if (!mounted) return;
+        setApproved(res);
+
+        // renvoie un ACK au sender (optionnel)
+        if (connected) {
+          await sendJson({ type: 'tiltpay:p2p-ack', requestId: incoming.requestId });
+        }
+      } catch (e) {
+        showError(e?.text || e?.message || 'Approval failed', { position: 'top' });
+      } finally {
+        if (mounted) setApproving(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [incoming, connected, sendJson, showError]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -46,29 +63,27 @@ export default function ReceiveTapToPayScreen({ navigation }) {
       <View style={styles.container}>
         {!incoming && (
           <>
-            <Text style={styles.tip}>{ready ? 'Bring phones together…' : 'Initializing…'}</Text>
-            {!ready && <ActivityIndicator style={{ marginTop:8 }} />}
+            <Text style={styles.title}>Waiting for sender…</Text>
+            {!ready && <Text style={styles.subtle}>Starting peer discovery…</Text>}
           </>
         )}
 
-        {incoming && !result && (
+        {!!incoming && !approved && (
           <>
             <Text style={styles.title}>Incoming</Text>
             <Text style={styles.amount}>{incoming.amount?.toFixed(2)} {incoming.currency}</Text>
-            <TouchableOpacity style={styles.cta} onPress={claim} disabled={claiming}>
-              {claiming ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Accept</Text>}
-            </TouchableOpacity>
+            {approving ? (
+              <View style={styles.center}><ActivityIndicator /><Text style={styles.subtle}>Approving…</Text></View>
+            ) : null}
           </>
         )}
 
-        {result && (
+        {!!approved && (
           <>
-            <Text style={styles.title}>Received ✅</Text>
-            <Text style={styles.amount}>{result.amount?.toFixed(2)} {result.currency}</Text>
-            <Text style={styles.subtle}>Tx: {result.tx_id}</Text>
-            <TouchableOpacity style={[styles.cta, { marginTop:16, backgroundColor:'#111' }]} onPress={() => navigation.replace('Home')}>
-              <Text style={styles.ctaText}>Done</Text>
-            </TouchableOpacity>
+            <Text style={stylessuccess.title}>Received ✓</Text>
+            <Text style={stylessuccess.amount}>
+              {approved.amount?.toFixed(2)} {approved.currency}
+            </Text>
           </>
         )}
       </View>
@@ -78,11 +93,14 @@ export default function ReceiveTapToPayScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex:1, backgroundColor:'#fff' },
-  container: { flex:1, alignItems:'center', justifyContent:'center', padding:16 },
-  tip: { color:'#6B7280' },
-  title: { fontSize:18, fontWeight:'700', color:'#111', marginBottom:8 },
-  amount: { fontSize:32, fontWeight:'800', color:'#111' },
+  container: { flex:1, alignItems:'center', justifyContent:'center', paddingHorizontal:16 },
+  title: { fontSize:20, fontWeight:'700', color:'#111' },
+  amount: { marginTop:8, fontSize:32, fontWeight:'800', color:'#111' },
   subtle: { color:'#9CA3AF', marginTop:6 },
-  cta: { marginTop:16, height:52, paddingHorizontal:28, borderRadius:14, backgroundColor:'#16a34a', alignItems:'center', justifyContent:'center' },
-  ctaText: { color:'#fff', fontWeight:'700' },
+  center: { alignItems:'center', marginTop:12 },
+});
+
+const stylessuccess = StyleSheet.create({
+  title: { fontSize:20, fontWeight:'800', color:'#0a7' },
+  amount: { marginTop:8, fontSize:32, fontWeight:'900', color:'#0a7' },
 });

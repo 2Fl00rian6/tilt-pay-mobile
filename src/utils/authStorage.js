@@ -1,81 +1,72 @@
 // src/utils/authStorage.js
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
-/**
- * On stocke le token par identifiant d'utilisateur (ici: phoneNumber en E.164 avec +).
- * Clés de stockage:
- *  - tp:currentUser -> phoneNumber courant (string, ex: +33123456789)
- *  - tp:token:<userId> -> access_token pour cet utilisateur
- */
+// --- clés (préfixées pour éviter les collisions)
+const PREFIX = 'TP_';
+const K_CURRENT_PHONE = `${PREFIX}CURRENT_PHONE`;
+const K_TOKEN = (phone) => `${PREFIX}TOKEN_${phone}`;
 
-const CURRENT_USER_KEY = 'tp:currentUser';
-const tokenKey = (userId) => `tp:token:${String(userId || '').trim()}`;
+// --- helpers
+const normalizePhoneKeepPlus = (p) =>
+  String(p ?? '').replace(/\s+/g, ''); // retire seulement les espaces, garde le "+"
 
-// ---------- Helpers de stockage (SecureStore avec fallback AsyncStorage) ----------
-async function sSet(key, value) {
+/** Enregistre le numéro courant (E.164 conseillé, ex: +33123456789) */
+export async function setCurrentPhone(phone) {
+  const v = normalizePhoneKeepPlus(phone);
+  await AsyncStorage.setItem(K_CURRENT_PHONE, v);
+}
+
+/** Récupère le numéro courant, ou null */
+export async function getCurrentPhone() {
+  const v = await AsyncStorage.getItem(K_CURRENT_PHONE);
+  return v || null;
+}
+
+/** Stocke un token associé à un numéro (SecureStore si possible, sinon AsyncStorage) */
+export async function setToken(phone, token) {
+  const p = normalizePhoneKeepPlus(phone);
+  const key = K_TOKEN(p);
   try {
-    // SecureStore ne supporte que des strings
-    await SecureStore.setItemAsync(key, String(value ?? ''));
+    await SecureStore.setItemAsync(key, token);
   } catch {
-    await AsyncStorage.setItem(key, String(value ?? ''));
+    await AsyncStorage.setItem(key, token);
   }
+  // on mémorise aussi le numéro courant pour la session
+  await setCurrentPhone(p);
 }
-async function sGet(key) {
+
+/** Lit le token pour un numéro (ou pour le numéro courant si non fourni) */
+export async function getToken(phone) {
+  const p = normalizePhoneKeepPlus(phone || (await getCurrentPhone()) || '');
+  if (!p) return null;
+  const key = K_TOKEN(p);
   try {
-    const v = await SecureStore.getItemAsync(key);
-    if (typeof v === 'string' && v.length) return v;
+    const t = await SecureStore.getItemAsync(key);
+    if (t != null) return t;
   } catch {}
-  return AsyncStorage.getItem(key);
+  const t2 = await AsyncStorage.getItem(key);
+  return t2 || null;
 }
-async function sDel(key) {
+
+/** Supprime le token d’un numéro donné */
+export async function removeToken(phone) {
+  const p = normalizePhoneKeepPlus(phone);
+  const key = K_TOKEN(p);
   try {
     await SecureStore.deleteItemAsync(key);
-  } catch {
-    await AsyncStorage.removeItem(key);
-  }
+  } catch {}
+  await AsyncStorage.removeItem(key);
 }
 
-// ------------------------- API publique -------------------------
-
-/** Définit l’utilisateur courant (ex: phoneNumber +33...) */
-export async function setCurrentUsername(userId) {
-  if (!userId) return;
-  await sSet(CURRENT_USER_KEY, String(userId));
-}
-
-/** Récupère l’utilisateur courant (phoneNumber) */
-export async function getCurrentUsername() {
-  const v = await sGet(CURRENT_USER_KEY);
-  return v || null;
-}
-
-/** Stocke le token pour un userId (phoneNumber) */
-export async function setToken(userId, accessToken) {
-  if (!userId) throw new Error('setToken: missing userId');
-  if (!accessToken) throw new Error('setToken: missing token');
-  await sSet(tokenKey(userId), accessToken);
-}
-
-/** Récupère le token pour un userId donné */
-export async function getToken(userId) {
-  if (!userId) return null;
-  const v = await sGet(tokenKey(userId));
-  return v || null;
-}
-
-/** Supprime le token d’un userId */
-export async function deleteToken(userId) {
-  if (!userId) return;
-  await sDel(tokenKey(userId));
-}
-
-/** Efface l’utilisateur courant + son token */
+/** Wipe des données locales de l’app (sans toucher aux clés d’autres libs) */
 export async function wipeAllLocalData() {
-  const userId = await getCurrentUsername();
-  try {
-    if (userId) await deleteToken(userId);
-  } finally {
-    await sDel(CURRENT_USER_KEY);
+  const keys = await AsyncStorage.getAllKeys();
+  const ours = keys.filter((k) => k.startsWith(PREFIX));
+  if (ours.length) await AsyncStorage.multiRemove(ours);
+  // on tente aussi de supprimer le token courant côté SecureStore
+  const phone = await getCurrentPhone();
+  if (phone) {
+    try { await SecureStore.deleteItemAsync(K_TOKEN(phone)); } catch {}
   }
 }

@@ -6,7 +6,7 @@ import PinDots from '../components/PinDots';
 import Keypad from '../components/Keypad';
 import { useError } from '../context/ErrorContext';
 import { login } from '../api/auth';
-import { setToken, setCurrentUsername } from '../utils/authStorage';
+import { setToken, setCurrentPhone } from '../utils/authStorage';
 
 const PIN_LEN = 4;
 
@@ -33,7 +33,7 @@ export default function LoginPinScreen({ route, navigation }) {
         const token = res?.access_token;
         if (!token) throw new Error('Missing access_token');
         await setToken(phoneNumber, token);
-        await setCurrentUsername(phoneNumber);
+        await setCurrentPhone(phoneNumber);
         navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
       } catch (e) {
         showError(e?.text || e?.message || 'Login failed', { position: 'top' });
