@@ -4,13 +4,13 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, StatusBar, A
 const ErrorContext = createContext({ showError: () => {}, clearError: () => {} });
 
 const PALETTES = {
-  error:   { bg: '#FEE2E2', border: '#FCA5A5', text: '#7F1D1D', icon: '⚠️' }, // rouge très clair
+  error:   { bg: '#FEE2E2', border: '#FCA5A5', text: '#7F1D1D', icon: '⚠️' },
   success: { bg: '#DCFCE7', border: '#86EFAC', text: '#065F46', icon: '✅' },
   info:    { bg: '#DBEAFE', border: '#93C5FD', text: '#1E40AF', icon: 'ℹ️'  },
 };
 
 export function ErrorProvider({ children }) {
-  const [toast, setToast] = useState(null); // { msg, type, duration, position }
+  const [toast, setToast] = useState(null);
   const timerRef = useRef(null);
   const anim = useRef(new Animated.Value(0)).current;
 

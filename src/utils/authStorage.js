@@ -5,11 +5,11 @@ import * as SecureStore from 'expo-secure-store';
 // --- clés (préfixées pour éviter les collisions)
 const PREFIX = 'TP_';
 const K_CURRENT_PHONE = `${PREFIX}CURRENT_PHONE`;
+const K_USER = `${PREFIX}USER`;
 const K_TOKEN = (phone) => `${PREFIX}TOKEN_${phone}`;
 
 // --- helpers
-const normalizePhoneKeepPlus = (p) =>
-  String(p ?? '').replace(/\s+/g, ''); // retire seulement les espaces, garde le "+"
+const normalizePhoneKeepPlus = (p) => String(p ?? '').replace(/\s+/g, '');
 
 /** Enregistre le numéro courant (E.164 conseillé, ex: +33123456789) */
 export async function setCurrentPhone(phone) {
@@ -36,6 +36,19 @@ export async function setToken(phone, token) {
   await setCurrentPhone(p);
 }
 
+/** Sauvegarde le user courant (unique) */
+export async function setUser(user) {
+  if (!user || !user.phoneNumber) throw new Error('User invalide');
+  console.log(user);
+  try {
+    const data = JSON.stringify(user);
+    await AsyncStorage.setItem(K_USER, data);
+    await setCurrentPhone(user.phoneNumber);
+  } catch (err) {
+    console.warn('Erreur setUser:', err);
+  }
+}
+
 /** Lit le token pour un numéro (ou pour le numéro courant si non fourni) */
 export async function getToken(phone) {
   const p = normalizePhoneKeepPlus(phone || (await getCurrentPhone()) || '');
@@ -49,6 +62,17 @@ export async function getToken(phone) {
   return t2 || null;
 }
 
+/** Récupère le user courant (unique) */
+export async function getUser() {
+  try {
+    const raw = await AsyncStorage.getItem(K_USER);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.warn('Erreur getUser:', err);
+    return null;
+  }
+}
+
 /** Supprime le token d’un numéro donné */
 export async function removeToken(phone) {
   const p = normalizePhoneKeepPlus(phone);
@@ -59,11 +83,20 @@ export async function removeToken(phone) {
   await AsyncStorage.removeItem(key);
 }
 
+/** Supprime complètement le user courant */
+export async function removeUser() {
+  try {
+    await AsyncStorage.removeItem(K_USER);
+  } catch (err) {
+    console.warn('Erreur removeUser:', err);
+  }
+}
+
 /** Wipe des données locales de l’app (sans toucher aux clés d’autres libs) */
 export async function wipeAllLocalData() {
   const keys = await AsyncStorage.getAllKeys();
-  const ours = keys.filter((k) => k.startsWith(PREFIX));
-  if (ours.length) await AsyncStorage.multiRemove(ours);
+  const oursUsers = keys.filter((k) => k.startsWith(`${PREFIX}USER_`));
+  if (oursUsers.length) await AsyncStorage.multiRemove(oursUsers);
   // on tente aussi de supprimer le token courant côté SecureStore
   const phone = await getCurrentPhone();
   if (phone) {

@@ -1,4 +1,3 @@
-// src/api/auth.js
 import { http, normalizePhoneKeepPlus, parseApiError } from './client';
 
 // Vérifie l’OTP (6 digits) — envoie NSN (15 chiffres)
@@ -23,15 +22,14 @@ export async function createAccount({ phoneNumber, fullName, tagName, pin }) {
 
   try {
     return await http.post('/auth/create-account', {
-      phoneNumber: phone,           // <- avec l’indicatif +XX
+      phoneNumber: phone,
       fullName,
       tagName,
       code: String(pin),
       code_confirmation: String(pin),
     });
   } catch (raw) {
-    const err = parseApiError(raw); // { status, code, text, messages?[] }
-    // S'il existe déjà -> on veut afficher le message puis rediriger vers le login
+    const err = parseApiError(raw);
     if (err?.status === 409 || err?.code === 'E_USER_ALREADY_EXISTS') {
       err.redirectTo = 'login';
     }
@@ -61,10 +59,20 @@ export async function login({ phoneNumber, pin }) {
       phoneNumber: phone,
       code: String(pin),
     });
+    console.log(res);
     return res;
   } catch (err) {
-    // Ajoute un log pour les erreurs réseau du simulateur
     console.log('[login] fetch failed', { message: err?.message, code: err?.code, status: err?.status });
+    throw parseApiError(err);
+  }
+}
+
+export async function me(token) {
+  try {
+    const res = await http.get('/auth/me', { token });
+    return res;
+  } catch (err) {
+    console.log('[me] fetch failed', { message: err?.message, code: err?.code, status: err?.status });
     throw parseApiError(err);
   }
 }

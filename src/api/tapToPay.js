@@ -1,4 +1,3 @@
-// src/api/tapToPay.js
 import { apiRequest } from './http';
 import { getToken } from '../utils/authStorage';
 

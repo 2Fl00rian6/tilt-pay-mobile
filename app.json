@@ -6,23 +6,16 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "icon": "./assets/app-icon.png",
+    "icon": "./assets/logo-app-ios.png",
     "splash": {
-      "image": "./assets/splash-logo.png",
+      "image": "./assets/loading-screen.png",
       "resizeMode": "contain",
       "backgroundColor": "#FCFCFC"
     },
     "ios": {
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true,
-          "NSExceptionDomains": {
-            "ec2-35-180-103-125.eu-west-3.compute.amazonaws.com": {
-              "NSIncludesSubdomains": true,
-              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true,
-              "NSTemporaryExceptionMinimumTLSVersion": "TLSv1.2"
-            }
-          }
+          "NSAllowsArbitraryLoads": true
         }
       },
       "bundleIdentifier": "com.tilt.pay"

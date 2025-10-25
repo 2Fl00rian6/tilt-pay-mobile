@@ -1,4 +1,3 @@
-// src/p2p/useP2P.js
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 

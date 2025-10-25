@@ -1,4 +1,4 @@
-const BASE_URL = 'http://ec2-35-180-103-125.eu-west-3.compute.amazonaws.com';
+const BASE_URL = 'https://tilt-pay-api.florianwarther.fr';
 
 const DEBUG_HTTP = true;
 

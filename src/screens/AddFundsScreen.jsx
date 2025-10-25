@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import React, { useEffect, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -7,23 +7,22 @@ import {
   StyleSheet,
   Animated,
   Easing,
-} from 'react-native'
-import HeaderBar from '../components/HeaderBar'
-import * as Haptics from 'expo-haptics'
+} from 'react-native';
+import HeaderBar from '../components/HeaderBar';
+import * as Haptics from 'expo-haptics';
 
 /* ---------- Icônes SVG ---------- */
-import IconTag from '../assets/icon-user.svg'
-import IconNfc from '../assets/icon-nfc.svg'
-import IconBank from '../assets/icon-bank.svg'
+import IconCard from '../assets/icon-credit-cart.svg';
+import IconBank from '../assets/icon-bank.svg';
+import IconCrypto from '../assets/icon-wallet.svg';
 
-export default function SendMethodScreen({ navigation, route }) {
-  const amount = route?.params?.amount
-
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const translateY = useRef(new Animated.Value(30)).current
-  const item1 = useRef(new Animated.Value(0)).current
-  const item2 = useRef(new Animated.Value(0)).current
-  const item3 = useRef(new Animated.Value(0)).current
+export default function AddFundsScreen({ navigation }) {
+  /* ---------- Animations d'entrée ---------- */
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(30)).current;
+  const item1 = useRef(new Animated.Value(0)).current;
+  const item2 = useRef(new Animated.Value(0)).current;
+  const item3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -44,39 +43,38 @@ export default function SendMethodScreen({ navigation, route }) {
         Animated.timing(item2, { toValue: 1, duration: 400, useNativeDriver: true }),
         Animated.timing(item3, { toValue: 1, duration: 400, useNativeDriver: true }),
       ]),
-    ]).start()
-  }, [])
+    ]).start();
+  }, []);
 
-  const vibrate = async () =>
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  const animateTouch = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
+  /* ---------- Navigation ---------- */
   const goBack = async () => {
-    await vibrate()
-    navigation.goBack()
-  }
+    await animateTouch();
+    navigation.goBack();
+  };
 
-  const goTag = async () => {
-    await vibrate()
-    navigation.navigate('SendByTag', { amount })
-  }
+  const goCreditCard = () => {
+    animateTouch();
+    navigation.navigate('AddFundsCard');
+  };
 
-  const goTapToPay = async () => {
-    await vibrate()
-    if (typeof amount === 'number') {
-      navigation.navigate('SendTapToPay', { amount, currency: 'EUR' })
-    } else {
-      navigation.navigate('SendEnterAmount')
-    }
-  }
+  const goBank = () => {
+    animateTouch();
+    navigation.navigate('AddFundsBank');
+  };
 
-  const goBank = async () => {
-    await vibrate()
-    navigation.navigate('SendBankTransfer', { amount })
-  }
+  const goCrypto = () => {
+    animateTouch();
+    navigation.navigate('AddFundsCrypto');
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <HeaderBar title="Send" onBack={goBack} />
+      {/* Retour haptique ajouté ici */}
+      <HeaderBar title="Add Funds" onBack={goBack} />
 
       <Animated.View
         style={[
@@ -84,8 +82,9 @@ export default function SendMethodScreen({ navigation, route }) {
           { opacity: fadeAnim, transform: [{ translateY }] },
         ]}
       >
-        <Text style={styles.title}>Choose a method</Text>
+        <Text style={styles.title}>Choose a funding method</Text>
 
+        {/* Credit Card */}
         <Animated.View
           style={{
             opacity: item1,
@@ -99,12 +98,13 @@ export default function SendMethodScreen({ navigation, route }) {
             ],
           }}
         >
-          <TouchableOpacity style={styles.row} onPress={goTag} activeOpacity={0.85}>
-            <IconTag width={22} height={22} />
-            <Text style={styles.rowText}>Send by tag</Text>
+          <TouchableOpacity style={styles.row} onPress={goCreditCard} activeOpacity={0.85}>
+            <IconCard width={24} height={24} />
+            <Text style={styles.rowText}>Credit Card</Text>
           </TouchableOpacity>
         </Animated.View>
 
+        {/* Bank Transfer */}
         <Animated.View
           style={{
             opacity: item2,
@@ -118,12 +118,13 @@ export default function SendMethodScreen({ navigation, route }) {
             ],
           }}
         >
-          <TouchableOpacity style={styles.row} onPress={goTapToPay} activeOpacity={0.85}>
-            <IconNfc width={22} height={22} />
-            <Text style={styles.rowText}>Tap to pay</Text>
+          <TouchableOpacity style={styles.row} onPress={goBank} activeOpacity={0.85}>
+            <IconBank width={24} height={24} />
+            <Text style={styles.rowText}>Bank Transfer</Text>
           </TouchableOpacity>
         </Animated.View>
 
+        {/* Crypto */}
         <Animated.View
           style={{
             opacity: item3,
@@ -137,16 +138,17 @@ export default function SendMethodScreen({ navigation, route }) {
             ],
           }}
         >
-          <TouchableOpacity style={styles.row} onPress={goBank} activeOpacity={0.85}>
-            <IconBank width={22} height={22} />
-            <Text style={styles.rowText}>Send to bank</Text>
+          <TouchableOpacity style={styles.row} onPress={goCrypto} activeOpacity={0.85}>
+            <IconCrypto width={24} height={24} />
+            <Text style={styles.rowText}>Crypto</Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
     </SafeAreaView>
-  )
+  );
 }
 
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, paddingTop: 16 },
@@ -170,4 +172,4 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   rowText: { fontSize: 16, color: '#48484A', fontWeight: '500' },
-})
+});

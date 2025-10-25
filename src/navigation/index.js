@@ -13,6 +13,8 @@ import ReceiveTapToPayScreen from '../screens/ReceiveTapToPayScreen';
 import SendMethodScreen from '../screens/SendMethodScreen';
 import SendTapToPayScreen from '../screens/SendTapToPayScreen';
 import SendEnterAmountScreen from '../screens/SendEnterAmountScreen';
+import AddFundsScreen from '../screens/AddFundsScreen';
+import AccountSettingsScreen from '../screens/AccountSettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,11 +38,13 @@ export default function StackNav() {
       <Stack.Screen name="EnterPin" component={EnterPinScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="ReceiveSelect" component={ReceiveSelectScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="ReceiveWithTag" component={ReceiveWithTagScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="ReceiveTapToPay" component={ReceiveTapToPayScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="ReceiveWithTag" component={ReceiveWithTagScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="ReceiveTapToPay" component={ReceiveTapToPayScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="SendMethod" component={SendMethodScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="SendEnterAmount" component={SendEnterAmountScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SendEnterAmount" component={SendEnterAmountScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="SendTapToPay" component={SendTapToPayScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="AddFunds" component={AddFundsScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

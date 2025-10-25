@@ -1,4 +1,3 @@
-// src/components/AmountPad.js
 import React, { useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { Svg, Path } from 'react-native-svg';

@@ -1,5 +1,4 @@
-// src/screens/EnterPhoneScreen.jsx
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Modal, FlatList, Animated,

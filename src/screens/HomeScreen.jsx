@@ -1,87 +1,97 @@
-// src/screens/HomeScreen.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Path, Rect, Circle } from 'react-native-svg';
-import { getCurrentUsername, getToken, wipeAllLocalData } from '../utils/authStorage';
-import { getBalance } from '../api/wallet';
+import * as Haptics from 'expo-haptics';
+import { getUser, getToken, wipeAllLocalData } from '../utils/authStorage';
 import { useError } from '../context/ErrorContext';
 
 /* ---------- Icônes ---------- */
 const IconUser = ({ size = 22, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M20 21a8 8 0 0 0-16 0" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
-    <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="1.8"/>
+    <Path d="M20 21a8 8 0 0 0-16 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <Circle cx="12" cy="7" r="4" stroke={color} strokeWidth="1.8" />
   </Svg>
 );
 const IconCopy = ({ size = 16, color = '#6B7280' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Rect x="9" y="9" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6"/>
-    <Rect x="4" y="4" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6"/>
+    <Rect x="9" y="9" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6" />
+    <Rect x="4" y="4" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.6" />
   </Svg>
 );
 const IconPlus = ({ size = 12, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round" />
   </Svg>
 );
 const IconArrowDownLeft = ({ size = 18, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M17 7L7 17M7 17V9M7 17h8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M17 7L7 17M7 17V9M7 17h8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 const IconArrowUpRight = ({ size = 18, color = '#fff' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M7 17l10-10M17 7H9m8 0v8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M7 17l10-10M17 7H9m8 0v8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
 /* ---------- Écran ---------- */
 export default function HomeScreen({ navigation, route }) {
   const { showError } = useError();
-
-  // tag éventuel passé par navigation après login/creation (si tu veux)
   const tagFromParams = route?.params?.tagName;
 
   const [phone, setPhone] = useState('');
   const [tag, setTag] = useState('');
   const [balance, setBalance] = useState(0);
 
-  // Démo transactions (à remplacer par l’API quand tu l’auras)
-  const transactions = useMemo(() => [
-    { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
-    { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
-    { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
-    { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
-  ], []);
+  const transactions = useMemo(
+    () => [
+      { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
+      { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
+      { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
+      { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
+    ],
+    []
+  );
 
+  /* ---------- Chargement du solde ---------- */
   useEffect(() => {
     (async () => {
       try {
-        const p = await getCurrentUsername();
-        setPhone(p || '');
-        setTag(tagFromParams || (p ? `user-${String(p).slice(-4)}` : 'user'));
+        const user = await getUser();
+        if (!user) return;
 
-        const token = await getToken(p);
+        setPhone(user.phoneNumber || '');
+        setTag(user.tagName || tagFromParams || '');
+
+        const token = await getToken(user.phoneNumber);
         if (!token) return;
 
-        const b = await getBalance(token);
-        // L’API renvoie { address, lamports, sol, tokens: [...] }
-        const sol = typeof b?.sol === 'number' ? b.sol : 0;
-        setBalance(sol);
+        const res = await fetch('https://tilt-pay-api.florianwarther.fr/wallet/balance', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await res.json();
+        console.log('[BALANCE]', data);
+
+        // 🔹 Recherche du token USDC
+        let usdBalance = 0;
+        if (Array.isArray(data?.tokens)) {
+          const usdc = data.tokens.find((t) => t.symbol === 'USDC');
+          if (usdc) {
+            const value = usdc.amount / 10 ** usdc.decimals;
+            usdBalance = Math.floor(value * 100) / 100; // arrondi à deux décimales inférieures
+          }
+        }
+        setBalance(usdBalance);
       } catch (e) {
+        console.error('[BALANCE ERROR]', e);
         showError(e?.message || 'Could not fetch balance', { position: 'top' });
       }
     })();
   }, [showError, tagFromParams]);
 
-  const fmtAmount = (n) => {
-    const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${n >= 0 ? '+$' : '-$'} ${abs}`;
-  };
-  const fmtDate = (iso) =>
-    new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-
+  /* ---------- Actions ---------- */
   async function onCopyTag() {
     try {
       const Clipboard = await import('expo-clipboard');
@@ -93,17 +103,44 @@ export default function HomeScreen({ navigation, route }) {
   }
 
   async function onLogout() {
-    try { await wipeAllLocalData(); }
-    finally { navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] }); }
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await wipeAllLocalData();
+    } finally {
+      navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] });
+    }
   }
 
+  const goAddFunds = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('AddFunds');
+  };
+
+  const goSend = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('SendMethod');
+  };
+
+  const goReceive = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('ReceiveSelect');
+  };
+
+  /* ---------- UI ---------- */
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.container}>
-        {/* Header right (profile → logout) */}
+        {/* Header right (profile → settings) */}
         <View style={styles.headerRow}>
           <View style={{ width: 28 }} />
-          <TouchableOpacity onPress={onLogout} style={styles.profileBtn}>
+          <TouchableOpacity
+            onPress={async () => {
+              await Haptics.selectionAsync();
+              navigation.navigate('AccountSettings');
+            }}
+            style={styles.profileBtn}
+            activeOpacity={0.8}
+          >
             <IconUser size={22} color="#111" />
           </TouchableOpacity>
         </View>
@@ -111,18 +148,16 @@ export default function HomeScreen({ navigation, route }) {
         {/* Tag + copy */}
         <View style={styles.tagRow}>
           <Text style={styles.tagText}>tag: {tag || 'user'}</Text>
-          <TouchableOpacity onPress={onCopyTag} style={styles.copyBtn}>
+          <TouchableOpacity onPress={onCopyTag} style={styles.copyBtn} activeOpacity={0.8}>
             <IconCopy size={16} color="#6B7280" />
           </TouchableOpacity>
         </View>
 
-        {/* Balance (affiche SOL par défaut — change le label si tu veux USD/EUR) */}
-        <Text style={styles.balanceText}>
-          ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-        </Text>
+        {/* Balance en USD */}
+        <Text style={styles.balanceText}>${balance.toFixed(2)}</Text>
 
-        {/* Add funds (outline) */}
-        <TouchableOpacity style={styles.addBtn}>
+        {/* Add funds */}
+        <TouchableOpacity style={styles.addBtn} onPress={goAddFunds} activeOpacity={0.85}>
           <Text style={styles.addBtnText}>Add funds</Text>
           <IconPlus size={14} color="#111" />
         </TouchableOpacity>
@@ -139,7 +174,13 @@ export default function HomeScreen({ navigation, route }) {
               <View style={styles.txAvatar} />
               <View style={styles.txInfo}>
                 <Text style={styles.txName}>{item.name}</Text>
-                <Text style={styles.txDate}>{fmtDate(item.date)}</Text>
+                <Text style={styles.txDate}>
+                  {new Date(item.date).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </Text>
               </View>
               <Text
                 style={[
@@ -147,7 +188,7 @@ export default function HomeScreen({ navigation, route }) {
                   item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
                 ]}
               >
-                {fmtAmount(item.amount)}
+                {item.amount >= 0 ? '+' : '-'}${Math.abs(item.amount).toFixed(2)}
               </Text>
             </View>
           )}
@@ -157,7 +198,8 @@ export default function HomeScreen({ navigation, route }) {
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={[styles.bigBtn, styles.bigBtnLight]}
-            onPress={() => navigation.navigate('ReceiveSelect')}
+            onPress={goReceive}
+            activeOpacity={0.9}
           >
             <View style={styles.bigBtnRow}>
               <Text style={styles.bigBtnTextDark}>Receive</Text>
@@ -167,7 +209,8 @@ export default function HomeScreen({ navigation, route }) {
 
           <TouchableOpacity
             style={[styles.bigBtn, styles.bigBtnDark]}
-            onPress={() => navigation.navigate('SendMethod')}  
+            onPress={goSend}
+            activeOpacity={0.9}
           >
             <View style={styles.bigBtnRow}>
               <Text style={styles.bigBtnText}>Send</Text>
@@ -180,24 +223,45 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-/* ---------- Styles identiques à ta version ---------- */
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, backgroundColor: '#fff' },
 
-  headerRow: { paddingTop: 12, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  headerRow: {
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
   profileBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
 
   tagRow: { marginTop: 6, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   tagText: { color: '#6B7280', fontSize: 14 },
   copyBtn: { padding: 6, marginLeft: 6 },
 
-  balanceText: { marginTop: 16, fontSize: 40, lineHeight: 48, color: '#111827', fontWeight: '700', textAlign: 'center' },
+  balanceText: {
+    marginTop: 16,
+    fontSize: 40,
+    lineHeight: 48,
+    color: '#111827',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 
   addBtn: {
-    marginTop: 12, alignSelf: 'center', height: 40, paddingHorizontal: 18,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#111111',
-    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
+    marginTop: 12,
+    alignSelf: 'center',
+    height: 40,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#111111',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   addBtnText: { color: '#111111', fontWeight: '600' },
 
@@ -214,8 +278,16 @@ const styles = StyleSheet.create({
 
   bottomBar: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8, flexDirection: 'row', gap: 12 },
   bigBtn: {
-    flex: 1, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3,
+    flex: 1,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   bigBtnLight: { backgroundColor: '#F3F4F6' },
   bigBtnDark: { backgroundColor: '#111111' },
