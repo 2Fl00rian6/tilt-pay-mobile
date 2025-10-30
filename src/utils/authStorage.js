@@ -92,14 +92,24 @@ export async function removeUser() {
   }
 }
 
-/** Wipe des données locales de l’app (sans toucher aux clés d’autres libs) */
 export async function wipeAllLocalData() {
-  const keys = await AsyncStorage.getAllKeys();
-  const oursUsers = keys.filter((k) => k.startsWith(`${PREFIX}USER_`));
-  if (oursUsers.length) await AsyncStorage.multiRemove(oursUsers);
-  // on tente aussi de supprimer le token courant côté SecureStore
-  const phone = await getCurrentPhone();
-  if (phone) {
-    try { await SecureStore.deleteItemAsync(K_TOKEN(phone)); } catch {}
+  try {
+    await AsyncStorage.clear();
+    const keysToDelete = ['tp_access_token'];
+
+    const phone = await getCurrentPhone();
+    if (phone) keysToDelete.push(K_TOKEN(phone));
+
+    for (const key of keysToDelete) {
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch (err) {
+        console.warn('Erreur suppression clé SecureStore:', key, err);
+      }
+    }
+
+    console.log('[wipeAllLocalData] tout effacé');
+  } catch (err) {
+    console.warn('Erreur wipeAllLocalData:', err);
   }
 }

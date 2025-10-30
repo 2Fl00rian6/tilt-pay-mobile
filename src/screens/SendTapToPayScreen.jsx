@@ -1,139 +1,70 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import HeaderBar from '../components/HeaderBar'
-import { useP2P } from '../p2p/useP2P'
-import { useError } from '../context/ErrorContext'
-import * as Haptics from 'expo-haptics'
+import React, { useEffect, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import NfcManager, { NfcTech } from 'react-native-nfc-manager'
+import * as utf8 from 'utf8'
 
-export default function SendTapToPayScreen({ route, navigation }) {
-  const amount = route?.params?.amount ?? 0
-  const currency = route?.params?.currency ?? 'EUR'
-  const { showError } = useError()
-
-  const { ready, peers, connected, connect, sendJson, onMessage } = useP2P({ displayName: 'Tilt Sender' })
-  const [sending, setSending] = useState(false)
-  const [lastMsg, setLastMsg] = useState(null)
+export default function SendHceScreen() {
+  const [status, setStatus] = useState('⏳ Initialisation...')
 
   useEffect(() => {
-    return onMessage(({ message }) => {
-      setLastMsg(String(message))
-    })
-  }, [onMessage])
+    initNfc()
+    return () => NfcManager.stop()
+  }, [])
 
-  const vibrate = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-  }
-
-  const goBack = async () => {
-    await vibrate()
-    navigation.goBack()
-  }
-
-  const handleConnect = async (id) => {
-    await vibrate()
-    connect(id)
-  }
-
-  const handleContinue = useCallback(async () => {
+  const initNfc = async () => {
     try {
-      await vibrate()
-      setSending(true)
-      const ok = await sendJson({
-        type: 'tiltpay:demo',
-        note: 'hello from sender',
-        amount,
-        currency,
-        ts: Date.now(),
-      })
-      if (!ok) showError('Send failed')
-    } finally {
-      setSending(false)
+      await NfcManager.start()
+      setStatus('📶 NFC prêt — approche un téléphone en mode réception')
+    } catch (e) {
+      console.log('❌ Erreur init NFC:', e)
+      setStatus('❌ NFC non disponible')
     }
-  }, [sendJson, amount, currency, showError])
+  }
 
-  const renderPeer = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => handleConnect(item.id)}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.peerName}>{item.name || 'Nearby device'}</Text>
-      <Text style={styles.peerSub}>{item.state}</Text>
-    </TouchableOpacity>
-  )
+  const toBytes = (text) => Array.from(utf8.encode(text)).map(c => c.charCodeAt(0))
+
+  const sendData = async () => {
+    try {
+      await NfcManager.requestTechnology(NfcTech.NfcA)
+      setStatus('📤 Envoi en cours...')
+      console.log('📤 Envoi SELECT APDU...')
+
+      const AID = 'F222222222'
+      const SELECT_APDU = [
+        0x00, 0xA4, 0x04, 0x00, AID.length / 2,
+        ...AID.match(/.{1,2}/g).map(x => parseInt(x, 16))
+      ]
+
+      await NfcManager.transceive(SELECT_APDU)
+      console.log('📤 Envoi message...')
+      const msgBytes = toBytes('HELLO_FROM_SENDER')
+      const response = await NfcManager.transceive(msgBytes)
+
+      console.log('✅ Réponse HCE:', response)
+      setStatus('✅ Données envoyées avec succès')
+    } catch (err) {
+      console.log('❌ Erreur NFC:', err)
+      setStatus('❌ Échec de l’envoi')
+    } finally {
+      NfcManager.cancelTechnologyRequest()
+    }
+  }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <HeaderBar title="Tap to send" onBack={goBack} />
-      <View style={styles.container}>
-        <Text style={styles.amount}>
-          {amount.toFixed(2)} {currency}
-        </Text>
-        <Text style={styles.tip}>Bring both phones together • Bluetooth & Wi-Fi ON</Text>
-
-        {!ready && (
-          <View style={styles.center}>
-            <ActivityIndicator />
-            <Text style={styles.subtle}>Starting nearby services…</Text>
-          </View>
-        )}
-
-        {ready && (
-          <>
-            <Text style={styles.section}>Nearby</Text>
-            <FlatList
-              data={peers}
-              keyExtractor={(p) => String(p.id)}
-              renderItem={renderPeer}
-              contentContainerStyle={{ paddingHorizontal: 16 }}
-              ListEmptyComponent={<Text style={styles.subtle}>No device yet</Text>}
-            />
-
-            <View style={styles.bottom}>
-              <TouchableOpacity
-                disabled={!connected || sending}
-                onPress={handleContinue}
-                style={[styles.cta, (!connected || sending) && styles.ctaDisabled]}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.ctaText}>
-                  {sending ? 'Sending…' : 'Continue'}
-                </Text>
-              </TouchableOpacity>
-              {!!lastMsg && <Text style={styles.small}>Last message: {lastMsg}</Text>}
-            </View>
-          </>
-        )}
-      </View>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Sender HCE</Text>
+      <Text style={styles.status}>{status}</Text>
+      <TouchableOpacity onPress={sendData} style={styles.btn}>
+        <Text style={styles.btnText}>📲 Envoyer</Text>
+      </TouchableOpacity>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1 },
-  amount: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginTop: 16, color: '#111' },
-  tip: { textAlign: 'center', color: '#6B7280', marginTop: 4 },
-  section: { marginTop: 16, marginBottom: 8, paddingHorizontal: 16, color: '#6B7280', fontWeight: '600' },
-  card: { padding: 16, borderRadius: 12, backgroundColor: '#F3F4F6', marginHorizontal: 16, marginBottom: 12 },
-  peerName: { fontWeight: '700', color: '#111' },
-  peerSub: { color: '#6B7280', marginTop: 2 },
-  center: { alignItems: 'center', marginTop: 12 },
-  subtle: { color: '#9CA3AF', marginTop: 8 },
-  bottom: { padding: 16, gap: 8 },
-  cta: {
-    backgroundColor: '#111',
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  ctaDisabled: { backgroundColor: '#E5E7EB' },
-  ctaText: { color: '#fff', fontWeight: '700' },
-  small: { color: '#6B7280', textAlign: 'center' },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: 20 },
+  status: { fontSize: 16, color: '#333', marginBottom: 30 },
+  btn: { backgroundColor: '#007bff', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 10 },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 })

@@ -1,10 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  Animated,
+  Easing,
+  RefreshControl,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Path, Rect, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import { getUser, getToken, wipeAllLocalData } from '../utils/authStorage';
+import * as Clipboard from 'expo-clipboard';
+import { getUser, getToken } from '../utils/authStorage';
 import { useError } from '../context/ErrorContext';
+
+const screenWidth = Dimensions.get('window').width;
 
 /* ---------- Icônes ---------- */
 const IconUser = ({ size = 22, color = '#111' }) => (
@@ -35,7 +48,7 @@ const IconArrowUpRight = ({ size = 18, color = '#fff' }) => (
   </Svg>
 );
 
-/* ---------- Écran ---------- */
+/* ---------- Main Screen ---------- */
 export default function HomeScreen({ navigation, route }) {
   const { showError } = useError();
   const tagFromParams = route?.params?.tagName;
@@ -43,109 +56,159 @@ export default function HomeScreen({ navigation, route }) {
   const [phone, setPhone] = useState('');
   const [tag, setTag] = useState('');
   const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingBalance, setLoadingBalance] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const transactions = useMemo(
-    () => [
-      { id: '1', name: 'Uber eats', date: '2025-09-07', amount: -7.12 },
-      { id: '2', name: 'Sling Money', date: '2025-09-05', amount: 649.34 },
-      { id: '3', name: 'Walmart', date: '2025-09-01', amount: -1467.12 },
-      { id: '4', name: 'Interests 4%', date: '2025-08-29', amount: 1.42 },
-    ],
-    []
-  );
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(15)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
 
-  /* ---------- Chargement du solde ---------- */
+  const playAnimation = () => {
+    fadeAnim.setValue(0);
+    translateY.setValue(15);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 550,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 16,
+      }),
+    ]).start();
+  };
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const startSpinner = () => {
+    spinAnim.setValue(0);
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
+
+  const startShimmer = () => {
+    shimmer.setValue(0);
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      })
+    ).start();
+  };
+
+  const shimmerBg = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#E5E7EB', '#F3F4F6'],
+  });
+
   useEffect(() => {
-    (async () => {
-      try {
-        const user = await getUser();
-        if (!user) return;
+    startSpinner();
+    startShimmer();
+  }, []);
 
-        setPhone(user.phoneNumber || '');
-        setTag(user.tagName || tagFromParams || '');
+  const fetchData = useCallback(async () => {
+    try {
+      if (!refreshing) setLoading(true);
+      setLoadingBalance(true);
+      startSpinner();
 
-        const token = await getToken(user.phoneNumber);
-        if (!token) return;
+      const user = await getUser();
+      if (!user) return;
+      setPhone(user.phoneNumber || '');
+      setTag(user.tagName || tagFromParams || '');
+      const token = await getToken(user.phoneNumber);
+      if (!token) return;
 
-        const res = await fetch('https://tilt-pay-api.florianwarther.fr/wallet/balance', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      const resBalance = await fetch('https://tilt-pay-api.florianwarther.fr/wallet/balance', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dataBalance = await resBalance.json();
 
-        const data = await res.json();
-        console.log('[BALANCE]', data);
-
-        // 🔹 Recherche du token USDC
-        let usdBalance = 0;
-        if (Array.isArray(data?.tokens)) {
-          const usdc = data.tokens.find((t) => t.symbol === 'USDC');
-          if (usdc) {
-            const value = usdc.amount / 10 ** usdc.decimals;
-            usdBalance = Math.floor(value * 100) / 100; // arrondi à deux décimales inférieures
-          }
+      let usdBalance = 0;
+      if (Array.isArray(dataBalance?.tokens)) {
+        const usdc = dataBalance.tokens.find((t) => t.symbol === 'USDC');
+        if (usdc) {
+          const value = usdc.amount / 10 ** usdc.decimals;
+          usdBalance = Math.floor(value * 100) / 100;
         }
-        setBalance(usdBalance);
-      } catch (e) {
-        console.error('[BALANCE ERROR]', e);
-        showError(e?.message || 'Could not fetch balance', { position: 'top' });
       }
-    })();
+      setBalance(usdBalance);
+      setLoadingBalance(false);
+
+      const resTx = await fetch('https://tilt-pay-api.florianwarther.fr/transaction/transactions', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dataTx = await resTx.json();
+      setTransactions(Array.isArray(dataTx.transactions) ? dataTx.transactions : []);
+
+      playAnimation();
+    } catch (e) {
+      showError(e?.message || 'Error while loading data', { position: 'top' });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [showError, tagFromParams]);
 
-  /* ---------- Actions ---------- */
-  async function onCopyTag() {
-    try {
-      const Clipboard = await import('expo-clipboard');
-      await Clipboard.setStringAsync(tag);
-      showError('Tag copied', { type: 'info', position: 'top' });
-    } catch {
-      showError('Could not copy tag', { position: 'top' });
-    }
-  }
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  async function onLogout() {
+  /* ---------- Haptics ---------- */
+  async function vibrate() {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await wipeAllLocalData();
-    } finally {
-      navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] });
+    } catch (e) {
+      console.warn('Haptics unavailable', e);
     }
   }
 
-  const goAddFunds = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('AddFunds');
-  };
-
-  const goSend = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('SendMethod');
-  };
-
-  const goReceive = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('ReceiveSelect');
-  };
+  /* ---------- Copier le tag ---------- */
+  async function onCopyTag() {
+    try {
+      if (!tag) {
+        showError('No tag to copy', { position: 'top' });
+        return;
+      }
+      await Clipboard.setStringAsync(tag);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showError('Tag copied to clipboard', { type: 'success', position: 'top' });
+    } catch (e) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showError('Failed to copy tag', { type: 'error', position: 'top' });
+    }
+  }
 
   /* ---------- UI ---------- */
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        {/* Header right (profile → settings) */}
+        {/* Header */}
         <View style={styles.headerRow}>
           <View style={{ width: 28 }} />
-          <TouchableOpacity
-            onPress={async () => {
-              await Haptics.selectionAsync();
-              navigation.navigate('AccountSettings');
-            }}
-            style={styles.profileBtn}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate('AccountSettings')} style={styles.profileBtn}>
             <IconUser size={22} color="#111" />
           </TouchableOpacity>
         </View>
 
-        {/* Tag + copy */}
+        {/* Tag */}
         <View style={styles.tagRow}>
           <Text style={styles.tagText}>tag: {tag || 'user'}</Text>
           <TouchableOpacity onPress={onCopyTag} style={styles.copyBtn} activeOpacity={0.8}>
@@ -153,53 +216,86 @@ export default function HomeScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {/* Balance en USD */}
-        <Text style={styles.balanceText}>${balance.toFixed(2)}</Text>
+        {/* Balance */}
+        {loadingBalance ? (
+          <Animated.View style={[styles.skeleton, { backgroundColor: shimmerBg, alignSelf: 'center' }]} />
+        ) : (
+          <Text style={styles.balanceText}>${balance.toFixed(2)}</Text>
+        )}
 
         {/* Add funds */}
-        <TouchableOpacity style={styles.addBtn} onPress={goAddFunds} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={async () => {
+            await vibrate();
+            navigation.navigate('AddFunds');
+          }}
+          activeOpacity={0.85}
+        >
           <Text style={styles.addBtnText}>Add funds</Text>
           <IconPlus size={14} color="#111" />
         </TouchableOpacity>
 
         {/* Transactions */}
         <Text style={styles.sectionTitle}>Transactions</Text>
-        <FlatList
-          data={transactions}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
-          ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-          renderItem={({ item }) => (
-            <View style={styles.txRow}>
-              <View style={styles.txAvatar} />
-              <View style={styles.txInfo}>
-                <Text style={styles.txName}>{item.name}</Text>
-                <Text style={styles.txDate}>
-                  {new Date(item.date).toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </Text>
-              </View>
-              <Text
-                style={[
-                  styles.txAmount,
-                  item.amount >= 0 ? styles.amountPlus : styles.amountMinus,
-                ]}
-              >
-                {item.amount >= 0 ? '+' : '-'}${Math.abs(item.amount).toFixed(2)}
-              </Text>
-            </View>
-          )}
-        />
+
+        {loading ? (
+          <View style={styles.loaderCenter}>
+            <Animated.View style={[styles.spinner, { transform: [{ rotate: spin }] }]} />
+          </View>
+        ) : (
+          <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY }] }}>
+            <FlatList
+              data={transactions}
+              keyExtractor={(item) => String(item.id)}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    setRefreshing(true);
+                    fetchData();
+                  }}
+                  tintColor="#888"
+                />
+              }
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+              ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+              renderItem={({ item }) => (
+                <View style={styles.txRow}>
+                  <View style={styles.txAvatar} />
+                  <View style={styles.txInfo}>
+                    <Text style={styles.txName}>{item.name}</Text>
+                    <Text style={styles.txDate}>
+                      {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.txAmount,
+                      item.type === 'credit' ? styles.amountPlus : styles.amountMinus,
+                    ]}
+                  >
+                    {item.type === 'credit' ? '+' : '-'}${(item.amount / 100000).toFixed(2)}
+                  </Text>
+                </View>
+              )}
+            />
+          </Animated.View>
+        )}
 
         {/* Bottom actions */}
         <View style={styles.bottomBar}>
           <TouchableOpacity
             style={[styles.bigBtn, styles.bigBtnLight]}
-            onPress={goReceive}
             activeOpacity={0.9}
+            onPress={async () => {
+              await vibrate();
+              navigation.navigate('ReceiveSelect');
+            }}
           >
             <View style={styles.bigBtnRow}>
               <Text style={styles.bigBtnTextDark}>Receive</Text>
@@ -209,8 +305,11 @@ export default function HomeScreen({ navigation, route }) {
 
           <TouchableOpacity
             style={[styles.bigBtn, styles.bigBtnDark]}
-            onPress={goSend}
             activeOpacity={0.9}
+            onPress={async () => {
+              await vibrate();
+              navigation.navigate('SendMethod');
+            }}
           >
             <View style={styles.bigBtnRow}>
               <Text style={styles.bigBtnText}>Send</Text>
@@ -228,27 +327,19 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1, backgroundColor: '#fff' },
 
-  headerRow: {
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
+  headerRow: { paddingTop: 12, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
   profileBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
 
   tagRow: { marginTop: 6, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   tagText: { color: '#6B7280', fontSize: 14 },
   copyBtn: { padding: 6, marginLeft: 6 },
 
-  balanceText: {
-    marginTop: 16,
-    fontSize: 40,
-    lineHeight: 48,
-    color: '#111827',
-    fontWeight: '700',
-    textAlign: 'center',
-  },
+  skeleton: { marginTop: 20, width: screenWidth * 0.4, height: 44, borderRadius: 8 },
+
+  balanceText: { marginTop: 16, fontSize: 40, lineHeight: 48, color: '#111827', fontWeight: '700', textAlign: 'center' },
+
+  spinner: { width: 42, height: 42, borderWidth: 3, borderColor: '#D1D5DB', borderTopColor: '#9CA3AF', borderRadius: 21 },
+  loaderCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   addBtn: {
     marginTop: 12,

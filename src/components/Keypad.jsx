@@ -1,93 +1,128 @@
-import React, { useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Easing, useWindowDimensions } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
+import React, { memo, useRef } from 'react'
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native'
+import * as Haptics from 'expo-haptics'
+import { Svg, Path } from 'react-native-svg'
 
-function BackspaceIcon({ size = 22, color = '#6B7280' }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M3 12l5.2-6H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8.2L3 12z" stroke={color} strokeWidth="1.6" strokeLinejoin="round"/>
-      <Path d="M14.5 10l-3 3m0-3l3 3" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    </Svg>
-  );
-}
+/* ---------- Icône backspace ---------- */
+const IconBackspace = ({ size = 26, color = '#48484A' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 12l5.2-6H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8.2L3 12z"
+      stroke={color}
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M14.5 10l-3 3m0-3l3 3"
+      stroke={color}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </Svg>
+)
+
+const KEYS = [
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+  ['', '0', 'back'],
+]
 
 function Key({ label, onPress }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const animate = (to) =>
-    Animated.timing(scale, { toValue: to, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true });
+  const scale = useRef(new Animated.Value(1)).current
+
+  const pressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.92,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 5,
+    }).start()
+  }
+
+  const pressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 35,
+      bounciness: 7,
+    }).start()
+  }
 
   const handlePress = async () => {
-    try {
-      const Haptics = await import('expo-haptics').catch(() => null);
-      if (Haptics?.selectionAsync) await Haptics.selectionAsync();
-    } catch {}
-    onPress?.();
-  };
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    onPress(label)
+  }
+
+  const renderContent = () => {
+    if (label === 'back') return <IconBackspace />
+    if (label === '') return <View style={{ width: 26 }} />
+    return <Text style={styles.keyText}>{label}</Text>
+  }
 
   return (
     <Pressable
-      onPressIn={() => animate(0.96).start()}
-      onPressOut={() => animate(1).start()}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
       onPress={handlePress}
-      style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      style={({ pressed }) => [styles.keyWrap, pressed && styles.keyPressed]}
+      hitSlop={12}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
-        {typeof label === 'string' ? (
-          <Text style={styles.digit}>{label}</Text>
-        ) : (
-          label
-        )}
+        {renderContent()}
       </Animated.View>
     </Pressable>
-  );
+  )
 }
 
-export default function Keypad({ onKey, onBackspace }) {
-  const { width } = useWindowDimensions();
-  const cols = 3;
-  const gap = 26;                  // airy spacing like mock
-  const side = Math.max(60, Math.min(88, (width - 48 - gap * (cols - 1)) / cols)); // 24px side paddings
-
-  const rows = useMemo(
-    () => [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      [null, '0', 'back'],
-    ],
-    []
-  );
+function Keypad({ onKey, onBackspace }) {
+  const handlePress = (key) => {
+    if (key === 'back') onBackspace()
+    else if (key !== '') onKey(key)
+  }
 
   return (
-    <View style={[styles.wrap, { paddingHorizontal: 24 }]}>
-      {rows.map((r, i) => (
-        <View key={i} style={[styles.row, { columnGap: gap, marginBottom: i < rows.length - 1 ? gap : 0 }]}>
-          {r.map((c, j) => {
-            if (c === null) return <View key={`${i}-${j}`} style={{ width: side, height: side }} />;
-            if (c === 'back') {
-              return (
-                <View key={`${i}-${j}`} style={{ width: side, height: side, alignItems: 'center', justifyContent: 'center' }}>
-                  <Key label={<BackspaceIcon size={22} />} onPress={onBackspace} />
-                </View>
-              );
-            }
-            return (
-              <View key={`${i}-${j}`} style={{ width: side, height: side, alignItems: 'center', justifyContent: 'center' }}>
-                <Key label={c} onPress={() => onKey?.(c)} />
-              </View>
-            );
-          })}
+    <View style={styles.grid}>
+      {KEYS.map((row, i) => (
+        <View key={i} style={styles.row}>
+          {row.map((key) => (
+            <Key key={key || i} label={key} onPress={handlePress} />
+          ))}
         </View>
       ))}
     </View>
-  );
+  )
 }
 
+export default memo(Keypad)
+
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  wrap: { paddingTop: 8, paddingBottom: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  key: { alignItems: 'center', justifyContent: 'center' }, // no background, flat
-  keyPressed: { opacity: 0.6 },
-  digit: { fontSize: 30, fontWeight: '600', color: '#4B5563' }, // gray-600 like mock
-});
+  grid: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+    gap: 18,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 40,
+  },
+  keyWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  keyPressed: {
+    backgroundColor: '#F3F4F6',
+  },
+  keyText: {
+    fontSize: 28,
+    fontWeight: '500',
+    color: '#111827',
+  },
+})

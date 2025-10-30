@@ -1,8 +1,9 @@
 {
   "expo": {
     "jsEngine": "hermes",
-    "name": "Tilt Pay",
-    "slug": "tilt-pay",
+    "name": "TiltPay",
+    "displayName": "TiltPay",
+    "slug": "tiltpay",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -25,17 +26,22 @@
       "edgeToEdgeEnabled": true,
       "usesCleartextTraffic": true,
       "splash": {
-        "image": "./assets/splash-logo.png",
+        "image": "./assets/loading-screen.png",
         "resizeMode": "contain",
         "backgroundColor": "#FCFCFC"
       },
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-foreground.png",
-        "backgroundColor": "#FCFCFC"
-      }
+      "permissions": [
+        "android.permission.NFC"
+      ]
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "45fa38f8-df16-4bde-bdd3-bda375b63e92"
+      }
+    },
+    "owner": "2fl00rian6"
   }
 }

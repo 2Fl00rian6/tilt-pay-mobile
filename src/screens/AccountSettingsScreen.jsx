@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useRef, useEffect, useState } from 'react'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import {
   View,
   Text,
@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
-} from 'react-native';
-import * as Haptics from 'expo-haptics';
-import HeaderBar from '../components/HeaderBar';
-import { Svg, Path } from 'react-native-svg';
-import { wipeAllLocalData } from '../utils/authStorage';
+} from 'react-native'
+import * as Haptics from 'expo-haptics'
+import HeaderBar from '../components/HeaderBar'
+import { Svg, Path } from 'react-native-svg'
+import { wipeAllLocalData } from '../utils/authStorage'
 
 /* ---------- Icônes ---------- */
 const IconChat = ({ size = 20, color = '#111' }) => (
@@ -24,7 +24,7 @@ const IconChat = ({ size = 20, color = '#111' }) => (
       strokeLinejoin="round"
     />
   </Svg>
-);
+)
 
 const IconLogout = ({ size = 20, color = '#111' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -43,11 +43,11 @@ const IconLogout = ({ size = 20, color = '#111' }) => (
       strokeLinejoin="round"
     />
   </Svg>
-);
+)
 
 export default function AccountSettingsScreen({ navigation }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [currency, setCurrency] = useState('USD');
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const [currency, setCurrency] = useState('USD')
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -55,25 +55,32 @@ export default function AccountSettingsScreen({ navigation }) {
       duration: 400,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
-    }).start();
-  }, []);
+    }).start()
+  }, [])
+
+  const handleBack = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    navigation.goBack()
+  }
 
   const onLogout = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await wipeAllLocalData();
-    navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] });
-  };
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    await wipeAllLocalData()
+    navigation.reset({ index: 0, routes: [{ name: 'EnterPhone' }] })
+  }
 
   const onSupport = async () => {
-    await Haptics.selectionAsync();
-    navigation.navigate('Support'); // crée la page plus tard si tu veux
-  };
+    await Haptics.selectionAsync()
+    navigation.navigate('Support')
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <HeaderBar title="Settings" onBack={() => navigation.goBack()} />
+      <HeaderBar title="Settings" onBack={handleBack} />
       <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-        <View style={styles.handleWrap}><View style={styles.handle} /></View>
+        <View style={styles.handleWrap}>
+          <View style={styles.handle} />
+        </View>
 
         <Text style={styles.title}>Settings</Text>
 
@@ -83,8 +90,8 @@ export default function AccountSettingsScreen({ navigation }) {
           <TouchableOpacity
             style={styles.currencyBtn}
             onPress={async () => {
-              await Haptics.selectionAsync();
-              setCurrency(currency === 'USD' ? 'EUR' : 'USD');
+              await Haptics.selectionAsync()
+              setCurrency(currency === 'USD' ? 'EUR' : 'USD')
             }}
           >
             <Text style={styles.currencyText}>{currency}</Text>
@@ -104,7 +111,7 @@ export default function AccountSettingsScreen({ navigation }) {
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
-  );
+  )
 }
 
 /* ---------- Styles ---------- */
@@ -131,4 +138,4 @@ const styles = StyleSheet.create({
   currencyText: { fontWeight: '600', color: '#111827' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 12 },
   rowText: { fontSize: 16, color: '#111827' },
-});
+})
