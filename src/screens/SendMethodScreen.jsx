@@ -57,7 +57,7 @@ export default function SendMethodScreen({ navigation, route }) {
 
   const goTag = async () => {
     await vibrate()
-    navigation.navigate('SendByTag', { amount })
+    navigation.navigate('SendTag', { amount })
   }
 
   const goTapToPay = async () => {

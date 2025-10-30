@@ -8,11 +8,13 @@ import LoginPinScreen from '../screens/LoginPinScreen';
 import EnterPinScreen from '../screens/EnterPinScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ReceiveSelectScreen from '../screens/ReceiveSelectScreen';
-import ReceiveWithTagScreen from '../screens/ReceiveWithTagScreen';
+import SendTagScreen from '../screens/SendTagScreen';
+import ReceiveTagScreen from '../screens/ReceiveTagScreen';
+import ConfirmTagTransferScreen from '../screens/ConfirmTagTransferScreen';
 import ReceiveTapToPayScreen from '../screens/ReceiveTapToPayScreen';
 import SendMethodScreen from '../screens/SendMethodScreen';
 import SendTapToPayScreen from '../screens/SendTapToPayScreen';
-import SendEnterAmountScreen from '../screens/SendEnterAmountScreen';
+import SendEnterAmountScreen from '../screens/SendEnterAmountScreen';;
 import AddFundsScreen from '../screens/AddFundsScreen';
 import AccountSettingsScreen from '../screens/AccountSettingsScreen';
 
@@ -38,13 +40,15 @@ export default function StackNav() {
       <Stack.Screen name="EnterPin" component={EnterPinScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="ReceiveSelect" component={ReceiveSelectScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="ReceiveWithTag" component={ReceiveWithTagScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="ReceiveTapToPay" component={ReceiveTapToPayScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="SendMethod" component={SendMethodScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="SendEnterAmount" component={SendEnterAmountScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="SendTapToPay" component={SendTapToPayScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="AddFunds" component={AddFundsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SendTag" component={SendTagScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="ConfirmTagTransfer" component={ConfirmTagTransferScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="ReceiveTag" component={ReceiveTagScreen} options={{ animation: 'fade' }} />
     </Stack.Navigator>
   );
 }

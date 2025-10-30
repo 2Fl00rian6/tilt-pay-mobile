@@ -7,7 +7,10 @@ import com.facebook.react.uimanager.ViewManager
 
 class HcePackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(HCEModule(reactContext))
+        return listOf(
+            HCEModule(reactContext),
+            BlePeripheralModule(reactContext)  // Juste celui-là pour le BLE
+        )
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

@@ -1,70 +1,102 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import NfcManager, { NfcTech } from 'react-native-nfc-manager'
-import * as utf8 from 'utf8'
+import { View, Text, TouchableOpacity, StyleSheet, PermissionsAndroid, Platform, NativeModules } from 'react-native'
 
-export default function SendHceScreen() {
+const { BlePeripheral } = NativeModules
+
+export default function SendBLE() {
   const [status, setStatus] = useState('⏳ Initialisation...')
+  const [isAdvertising, setIsAdvertising] = useState(false)
 
   useEffect(() => {
-    initNfc()
-    return () => NfcManager.stop()
+    requestPermissions()
+    return () => {
+      if (isAdvertising) {
+        BlePeripheral.stopAdvertising()
+      }
+    }
   }, [])
 
-  const initNfc = async () => {
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      ])
+      console.log('Permissions BLE:', granted)
+    }
+    setStatus('📶 Prêt - Appuie sur Diffuser')
+  }
+
+  const startAdvertising = async () => {
     try {
-      await NfcManager.start()
-      setStatus('📶 NFC prêt — approche un téléphone en mode réception')
-    } catch (e) {
-      console.log('❌ Erreur init NFC:', e)
-      setStatus('❌ NFC non disponible')
+      setStatus('📡 Démarrage de la diffusion...')
+      
+      const message = 'HELLO_FROM_SENDER'
+      await BlePeripheral.startAdvertising(message)
+      
+      setIsAdvertising(true)
+      setStatus('📡 TiltPay diffuse maintenant!\nVisible par les autres appareils')
+      console.log('✅ BLE Advertising actif')
+      
+    } catch (err) {
+      console.log('❌ Erreur:', err)
+      setStatus(`❌ Erreur: ${err.message}`)
+      setIsAdvertising(false)
     }
   }
 
-  const toBytes = (text) => Array.from(utf8.encode(text)).map(c => c.charCodeAt(0))
-
-  const sendData = async () => {
+  const stopAdvertising = async () => {
     try {
-      await NfcManager.requestTechnology(NfcTech.NfcA)
-      setStatus('📤 Envoi en cours...')
-      console.log('📤 Envoi SELECT APDU...')
-
-      const AID = 'F222222222'
-      const SELECT_APDU = [
-        0x00, 0xA4, 0x04, 0x00, AID.length / 2,
-        ...AID.match(/.{1,2}/g).map(x => parseInt(x, 16))
-      ]
-
-      await NfcManager.transceive(SELECT_APDU)
-      console.log('📤 Envoi message...')
-      const msgBytes = toBytes('HELLO_FROM_SENDER')
-      const response = await NfcManager.transceive(msgBytes)
-
-      console.log('✅ Réponse HCE:', response)
-      setStatus('✅ Données envoyées avec succès')
+      await BlePeripheral.stopAdvertising()
+      setIsAdvertising(false)
+      setStatus('📶 Diffusion arrêtée')
+      console.log('✅ Advertising arrêté')
     } catch (err) {
-      console.log('❌ Erreur NFC:', err)
-      setStatus('❌ Échec de l’envoi')
-    } finally {
-      NfcManager.cancelTechnologyRequest()
+      console.log('❌ Erreur stop:', err)
     }
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sender HCE</Text>
+      <Text style={styles.title}>📤 Sender BLE</Text>
       <Text style={styles.status}>{status}</Text>
-      <TouchableOpacity onPress={sendData} style={styles.btn}>
-        <Text style={styles.btnText}>📲 Envoyer</Text>
+      
+      {isAdvertising && (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            ℹ️ Ton appareil est maintenant visible par les autres téléphones TiltPay à proximité
+          </Text>
+        </View>
+      )}
+      
+      <TouchableOpacity 
+        onPress={isAdvertising ? stopAdvertising : startAdvertising}
+        style={[styles.btn, isAdvertising && styles.btnActive]}
+      >
+        <Text style={styles.btnText}>
+          {isAdvertising ? '⏹ Arrêter la diffusion' : '📡 Diffuser TiltPay'}
+        </Text>
       </TouchableOpacity>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 20 },
-  status: { fontSize: 16, color: '#333', marginBottom: 30 },
-  btn: { backgroundColor: '#007bff', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 10 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', padding: 20 },
+  title: { fontSize: 24, fontWeight: '700', marginBottom: 20 },
+  status: { fontSize: 16, color: '#333', marginBottom: 30, textAlign: 'center', lineHeight: 24 },
+  infoBox: { 
+    backgroundColor: '#cfe2ff', 
+    padding: 15, 
+    borderRadius: 10, 
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#9ec5fe'
+  },
+  infoText: { fontSize: 14, color: '#084298', textAlign: 'center' },
+  btn: { backgroundColor: '#007bff', paddingVertical: 14, paddingHorizontal: 40, borderRadius: 10 },
+  btnActive: { backgroundColor: '#dc3545' },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 })

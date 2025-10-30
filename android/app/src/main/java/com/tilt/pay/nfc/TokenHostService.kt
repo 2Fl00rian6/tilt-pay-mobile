@@ -12,39 +12,83 @@ class TokenHostService : HostApduService() {
     private val TAG = "TokenHostService"
     private val SELECT_OK = byteArrayOf(0x90.toByte(), 0x00.toByte())
 
+    init {
+        Log.d(TAG, "🚀 TokenHostService INIT appelé!")
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        Log.d(TAG, "✅ TokenHostService.onCreate() appelé")
+    }
+
+    override fun onStartCommand(intent: android.content.Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "🔄 TokenHostService.onStartCommand() appelé")
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun processCommandApdu(apdu: ByteArray?, extras: Bundle?): ByteArray {
-        if (apdu == null) return SELECT_OK
+        Log.d(TAG, "📥 ===== processCommandApdu APPELÉ =====")
+        
+        if (apdu == null) {
+            Log.w(TAG, "⚠️ APDU null reçu")
+            return SELECT_OK
+        }
 
-        val apduString = apdu.joinToString(" ") { "%02X".format(it) }
-        Log.d(TAG, "📥 APDU reçu: $apduString")
+        val apduHex = apdu.joinToString(" ") { "%02X".format(it) }
+        Log.d(TAG, "📥 APDU (${apdu.size} bytes): $apduHex")
 
-        val message = String(apdu)
-        sendEventToReact(message)
+        // Vérifier SELECT APDU (00 A4 04 00 ...)
+        if (apdu.size >= 5 && apdu[0] == 0x00.toByte() && apdu[1] == 0xA4.toByte()) {
+            Log.d(TAG, "✅ SELECT APDU reconnu → réponse 90 00")
+            return SELECT_OK
+        }
 
-        return "ACK_FROM_HCE".toByteArray() + SELECT_OK
+        // Traiter les données
+        try {
+            val message = String(apdu, Charsets.UTF_8)
+            Log.d(TAG, "📩 Message: $message")
+            sendEventToReact(message)
+            
+            val ack = "ACK_FROM_HCE".toByteArray(Charsets.UTF_8)
+            Log.d(TAG, "📤 Envoi ACK + 90 00")
+            return ack + SELECT_OK
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Erreur: ${e.message}", e)
+            return SELECT_OK
+        }
     }
 
     override fun onDeactivated(reason: Int) {
-        Log.d(TAG, "❌ HCE désactivé: $reason")
+        val reasonStr = when (reason) {
+            DEACTIVATION_LINK_LOSS -> "LINK_LOSS"
+            DEACTIVATION_DESELECTED -> "DESELECTED"
+            else -> "UNKNOWN($reason)"
+        }
+        Log.d(TAG, "❌ HCE désactivé: $reasonStr")
     }
 
     private fun sendEventToReact(message: String) {
         try {
-            val reactApp = application as ReactApplication
-            val reactContext: ReactContext? = reactApp.reactNativeHost.reactInstanceManager.currentReactContext
+            val reactApp = application as? ReactApplication
+            if (reactApp == null) {
+                Log.e(TAG, "❌ App non ReactApplication")
+                return
+            }
 
-            if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+            val reactContext = reactApp.reactNativeHost.reactInstanceManager.currentReactContext
+
+            if (reactContext?.hasActiveCatalystInstance() == true) {
                 val params = Arguments.createMap()
                 params.putString("response", message)
                 reactContext
                     .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
                     .emit("HCE_EVENT", params)
-                Log.d(TAG, "✅ Événement HCE_EVENT envoyé: $message")
+                Log.d(TAG, "✅ Événement envoyé à React: $message")
             } else {
-                Log.w(TAG, "⚠️ ReactContext inactif — événement non envoyé")
+                Log.w(TAG, "⚠️ ReactContext inactif")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "💥 Erreur émission HCE_EVENT: ${e.message}", e)
+            Log.e(TAG, "💥 Erreur React: ${e.message}", e)
         }
     }
 }

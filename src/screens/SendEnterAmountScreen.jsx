@@ -152,9 +152,15 @@ export default function SendEnterAmountScreen({ route, navigation }) {
   const handleContinue = async () => {
     if (amountNumber <= 0) return
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    navigation.navigate('SendTapToPay', { amount: amountNumber, currency })
-  }
 
+    const tag = route?.params?.tag
+
+    if (tag) {
+      navigation.navigate('ConfirmTagTransfer', { tag, amount: amountNumber, currency })
+    } else {
+      navigation.navigate('SendTapToPay', { amount: amountNumber, currency })
+    }
+  }
   const rows = [
     ['1', '2', '3'],
     ['4', '5', '6'],

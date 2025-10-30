@@ -290,7 +290,7 @@ export default function HomeScreen({ navigation, route }) {
         {/* Bottom actions */}
         <View style={styles.bottomBar}>
           <TouchableOpacity
-            style={[styles.bigBtn, styles.bigBtnLight]}
+            style={[styles.bigBtn, styles.bigBtnDark]}
             activeOpacity={0.9}
             onPress={async () => {
               await vibrate();
@@ -298,8 +298,8 @@ export default function HomeScreen({ navigation, route }) {
             }}
           >
             <View style={styles.bigBtnRow}>
-              <Text style={styles.bigBtnTextDark}>Receive</Text>
-              <IconArrowDownLeft size={18} color="#111" />
+              <Text style={styles.bigBtnText}>Receive</Text>
+              <IconArrowDownLeft size={18} color="#fff" />
             </View>
           </TouchableOpacity>
 

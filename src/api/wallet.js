@@ -1,4 +1,21 @@
 import { http } from './client';
+import { getToken } from '../utils/authStorage';
+
+export const transferByTag = async ({ tag, amount }) => {
+  const token = await getToken();
+  
+  if (!token) {
+    throw new Error('Non authentifié - connecte-toi d\'abord');
+  }
+  
+  const res = await http.post(
+    '/wallet/transfer-by-tag',
+    { tag, amount },
+    { token }
+  );
+  
+  return res;
+};
 
 export function getBalance(token) {
   return http.get('/wallet/balance', { token });
@@ -6,10 +23,6 @@ export function getBalance(token) {
 
 export function getWalletAddress(token) {
   return http.get('/wallet/address', { token });
-}
-
-export function transferByTag(token, { amount, tag }) {
-  return http.post('/wallet/transfer-by-tag', { amount, tag }, { token });
 }
 
 export function requestVirtualAccount(token, currency) {
