@@ -1,9 +1,7 @@
 package com.tilt.pay
 
-import com.tilt.pay.nfc.HcePackage;
 import android.app.Application
 import android.content.res.Configuration
-
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
@@ -13,7 +11,6 @@ import com.facebook.react.ReactHost
 import com.facebook.react.common.ReleaseLevel
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 import com.facebook.react.defaults.DefaultReactNativeHost
-
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
@@ -23,15 +20,13 @@ class MainApplication : Application(), ReactApplication {
       this,
       object : DefaultReactNativeHost(this) {
           override fun getPackages(): List<ReactPackage> {
-            val packages = PackageList(this).packages.toMutableList()
-            packages.add(HcePackage())
-            return packages
+              val packages = PackageList(this).packages
+              // ✅ BLE-PLX est auto-linké, ne rien ajouter ici
+              return packages
           }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"
-
           override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
-
           override val isNewArchEnabled: Boolean = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
       }
   )

@@ -1351,6 +1351,8 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+  - react-native-ble-manager (11.5.3):
+    - React-Core
   - react-native-ble-plx (3.5.0):
     - hermes-engine
     - MultiplatformBleAdapter (= 0.2.0)
@@ -1982,6 +1984,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-ble-manager (from `../node_modules/react-native-ble-manager`)
   - react-native-ble-plx (from `../node_modules/react-native-ble-plx`)
   - react-native-nfc-manager (from `../node_modules/react-native-nfc-manager`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2122,6 +2125,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-ble-manager:
+    :path: "../node_modules/react-native-ble-manager"
   react-native-ble-plx:
     :path: "../node_modules/react-native-ble-plx"
   react-native-nfc-manager:
@@ -2250,6 +2255,7 @@ SPEC CHECKSUMS:
   React-logger: 50fdb9a8236da90c0b1072da5c32ee03aeb5bf28
   React-Mapbuffer: 9050ee10c19f4f7fca8963d0211b2854d624973e
   React-microtasksnativemodule: f775db9e991c6f3b8ccbc02bfcde22770f96e23b
+  react-native-ble-manager: 3403ea85ed29a26e3a281becc3ddc0c0b74c66f6
   react-native-ble-plx: 1c093030510e7a070d3a268c5296aba851ae1033
   react-native-nfc-manager: e5e91b4e9af0551755cdb6eaec55a8ff820ccdc6
   react-native-safe-area-context: 42a1b4f8774b577d03b53de7326e3d5757fe9513

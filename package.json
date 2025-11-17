@@ -34,6 +34,7 @@
     "react-native-svg": "^15.14.0",
     "react-native-svg-transformer": "^1.5.1",
     "tailwind-rn": "^4.2.0",
+    "use-latest-callback": "^0.3.2",
     "utf8": "^3.0.0",
     "world-countries": "^5.1.0"
   },

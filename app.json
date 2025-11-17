@@ -14,12 +14,14 @@
       "backgroundColor": "#FCFCFC"
     },
     "ios": {
+      "bundleIdentifier": "com.tilt.pay",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
-      },
-      "bundleIdentifier": "com.tilt.pay"
+        },
+        "NSBluetoothAlwaysUsageDescription": "TiltPay utilise le Bluetooth pour envoyer et recevoir des paiements à proximité.",
+        "NSBluetoothPeripheralUsageDescription": "TiltPay utilise le Bluetooth pour détecter et échanger des informations avec d'autres appareils."
+      }
     },
     "android": {
       "package": "com.tilt.pay",
@@ -31,11 +33,25 @@
         "backgroundColor": "#FCFCFC"
       },
       "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_ADVERTISE",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.NFC"
       ]
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": "Autoriser TiltPay à se connecter à des appareils Bluetooth"
+        }
+      ]
     ],
     "extra": {
       "eas": {

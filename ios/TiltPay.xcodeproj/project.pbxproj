@@ -9,24 +9,24 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		5AFA000AAF2B6A050EF8EAE4 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70FDADA8FD24F1800C3C93E3 /* ExpoModulesProvider.swift */; };
-		7CD4A212452B1E95B77DEC28 /* libPods-TiltPay.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1826A003E4706EB08A614EE3 /* libPods-TiltPay.a */; };
+		478C0AB7BB604F4ADCBB37ED /* libPods-TiltPay.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 479132BE01133CE48602EF5B /* libPods-TiltPay.a */; };
+		5E1FD34EF41C79F8F3DE5AD4 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8908E09DCD5E7E44939F3611 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		BCD1CFFBC9DC6CD08336D468 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C48147424C65BB690AF1B4EE /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F13FDCC551DB32BE171245B2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DF92AE78BAF133BC0668A206 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* TiltPay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TiltPay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = TiltPay/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = TiltPay/Info.plist; sourceTree = "<group>"; };
-		1826A003E4706EB08A614EE3 /* libPods-TiltPay.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TiltPay.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		1EDBB0F41AA4ABD798E55DBA /* Pods-TiltPay.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TiltPay.release.xcconfig"; path = "Target Support Files/Pods-TiltPay/Pods-TiltPay.release.xcconfig"; sourceTree = "<group>"; };
-		70FDADA8FD24F1800C3C93E3 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-TiltPay/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		936043B0C05B9D0687663B6F /* Pods-TiltPay.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TiltPay.debug.xcconfig"; path = "Target Support Files/Pods-TiltPay/Pods-TiltPay.debug.xcconfig"; sourceTree = "<group>"; };
+		3E7E18F033E558F65466EC3F /* Pods-TiltPay.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TiltPay.debug.xcconfig"; path = "Target Support Files/Pods-TiltPay/Pods-TiltPay.debug.xcconfig"; sourceTree = "<group>"; };
+		479132BE01133CE48602EF5B /* libPods-TiltPay.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TiltPay.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8714E04FD594B5A4052F4C14 /* Pods-TiltPay.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TiltPay.release.xcconfig"; path = "Target Support Files/Pods-TiltPay/Pods-TiltPay.release.xcconfig"; sourceTree = "<group>"; };
+		8908E09DCD5E7E44939F3611 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-TiltPay/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = TiltPay/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C48147424C65BB690AF1B4EE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = TiltPay/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		DF92AE78BAF133BC0668A206 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = TiltPay/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = TiltPay/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* TiltPay-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "TiltPay-Bridging-Header.h"; path = "TiltPay/TiltPay-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7CD4A212452B1E95B77DEC28 /* libPods-TiltPay.a in Frameworks */,
+				478C0AB7BB604F4ADCBB37ED /* libPods-TiltPay.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,44 +53,28 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				C48147424C65BB690AF1B4EE /* PrivacyInfo.xcprivacy */,
+				DF92AE78BAF133BC0668A206 /* PrivacyInfo.xcprivacy */,
 			);
 			name = TiltPay;
 			sourceTree = "<group>";
 		};
-		14378751B7F1B2A515EC3F79 /* ExpoModulesProviders */ = {
+		1D5F70726DDF0298AF20C5C4 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				643337B876787098A0D4FB07 /* TiltPay */,
+				3E7E18F033E558F65466EC3F /* Pods-TiltPay.debug.xcconfig */,
+				8714E04FD594B5A4052F4C14 /* Pods-TiltPay.release.xcconfig */,
 			);
-			name = ExpoModulesProviders;
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				1826A003E4706EB08A614EE3 /* libPods-TiltPay.a */,
+				479132BE01133CE48602EF5B /* libPods-TiltPay.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		643337B876787098A0D4FB07 /* TiltPay */ = {
-			isa = PBXGroup;
-			children = (
-				70FDADA8FD24F1800C3C93E3 /* ExpoModulesProvider.swift */,
-			);
-			name = TiltPay;
-			sourceTree = "<group>";
-		};
-		68568375DC74F44F5EFD0DF1 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				936043B0C05B9D0687663B6F /* Pods-TiltPay.debug.xcconfig */,
-				1EDBB0F41AA4ABD798E55DBA /* Pods-TiltPay.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -107,8 +91,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				68568375DC74F44F5EFD0DF1 /* Pods */,
-				14378751B7F1B2A515EC3F79 /* ExpoModulesProviders */,
+				1D5F70726DDF0298AF20C5C4 /* Pods */,
+				9281DF9E064710990EB6EBEE /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -121,6 +105,22 @@
 				13B07F961A680F5B00A75B9A /* TiltPay.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8F01E1F5F32484AE1FF11877 /* TiltPay */ = {
+			isa = PBXGroup;
+			children = (
+				8908E09DCD5E7E44939F3611 /* ExpoModulesProvider.swift */,
+			);
+			name = TiltPay;
+			sourceTree = "<group>";
+		};
+		9281DF9E064710990EB6EBEE /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				8F01E1F5F32484AE1FF11877 /* TiltPay */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "TiltPay" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				BE5F3C65EDB906649951D4D5 /* [Expo] Configure project */,
+				47DE9DED5544F154071A2DC7 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				E7F6CC1D045F42CB5780FFDB /* [CP] Embed Pods Frameworks */,
+				760C2F33AB5DF4828FE60847 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				BCD1CFFBC9DC6CD08336D468 /* PrivacyInfo.xcprivacy in Resources */,
+				F13FDCC551DB32BE171245B2 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,6 +242,52 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		47DE9DED5544F154071A2DC7 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/TiltPay/TiltPay.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-TiltPay/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-TiltPay/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-TiltPay/expo-configure-project.sh\"\n";
+		};
+		760C2F33AB5DF4828FE60847 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TiltPay/Pods-TiltPay-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TiltPay/Pods-TiltPay-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -272,52 +318,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TiltPay/Pods-TiltPay-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		BE5F3C65EDB906649951D4D5 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/TiltPay/TiltPay.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-TiltPay/expo-configure-project.sh",
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-TiltPay/ExpoModulesProvider.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-TiltPay/expo-configure-project.sh\"\n";
-		};
-		E7F6CC1D045F42CB5780FFDB /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-TiltPay/Pods-TiltPay-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TiltPay/Pods-TiltPay-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -326,7 +326,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				5AFA000AAF2B6A050EF8EAE4 /* ExpoModulesProvider.swift in Sources */,
+				5E1FD34EF41C79F8F3DE5AD4 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,7 +335,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 936043B0C05B9D0687663B6F /* Pods-TiltPay.debug.xcconfig */;
+			baseConfigurationReference = 3E7E18F033E558F65466EC3F /* Pods-TiltPay.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -371,7 +371,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1EDBB0F41AA4ABD798E55DBA /* Pods-TiltPay.release.xcconfig */;
+			baseConfigurationReference = 8714E04FD594B5A4052F4C14 /* Pods-TiltPay.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
